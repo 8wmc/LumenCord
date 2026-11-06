@@ -1,0 +1,83 @@
+name: Build Installer
+on:
+    workflow_dispatch:
+    push:
+        branches:
+            - main
+        paths:
+            - .github/workflows/installer.yml
+            - installer/**
+permissions:
+    contents: write
+
+jobs:
+    build-windows:
+        runs-on: windows-latest
+        defaults:
+            run:
+                working-directory: installer
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup MSYS2
+              uses: msys2/setup-msys2@v2
+
+            - name: Install Windows dependencies
+              shell: msys2 {0}
+              run: pacman -S --noconfirm git mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2 mingw-w64-x86_64-go make
+
+            - name: Install Go dependencies
+              shell: msys2 {0}
+              run: |
+                  export GOROOT=/mingw64/lib/go
+                  export GOPATH=/mingw64
+                  go mod download
+                  go install github.com/tc-hib/go-winres@v0.3.3
+
+            - name: Build
+              shell: msys2 {0}
+              run: |
+                  git config --global --add safe.directory "$(cygpath -u "$GITHUB_WORKSPACE")"
+                  make GUI=1 VERSION=Unknown
+                  make VERSION=Unknown
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: LumenCordInstaller-windows
+                  path: installer/build/*.exe
+
+    build-linux:
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: installer
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-go@v5
+              with:
+                  go-version: "1.22"
+            - name: Build Cli
+              run: make VERSION=Unknown
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: LumenCordInstaller-linux
+                  path: installer/build/*
+
+    release:
+        runs-on: ubuntu-latest
+        needs: [build-windows, build-linux]
+        if: github.repository == '8wmc/LumenCord'
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/download-artifact@v4
+              with:
+                  path: out
+                  merge-multiple: true
+            - name: Upload to the DevBuild release
+              run: |
+                  gh release view devbuild >/dev/null 2>&1 || gh release create devbuild --title "DevBuild" --notes "Latest LumenCord build. Download LumenCordInstaller.exe below to install." --latest || true
+                  gh release upload devbuild --clobber out/*
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
