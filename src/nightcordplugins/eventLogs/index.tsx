@@ -528,7 +528,7 @@ function LogRow({ e, onClose }: { e: LogEntry; onClose?: () => void; }) {
             }
             onClose?.();
         } catch (err) {
-            console.error("Nightcord Navigation Error:", err);
+            console.error("LumenCord Navigation Error:", err);
             navigateTo(e.realId ? `/channels/${e.guildId || "@me"}/${e.channelId}/${e.realId}` : `/channels/${e.guildId || "@me"}/${e.channelId}`);
             onClose?.();
         }

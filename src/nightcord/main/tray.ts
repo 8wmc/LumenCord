@@ -220,13 +220,13 @@ export async function initTray(win: BrowserWindow, setIsQuitting: (val: boolean)
 
                 const pixmap = await getCachedTrayPixmap(trayVariant);
                 nativeSNI.setStatusNotifierIcon(pixmap);
-                nativeSNI.setStatusNotifierTitle("Nightcord");
+                nativeSNI.setStatusNotifierTitle("LumenCord");
 
                 const menuItems = [
                     { id: 1, label: win.isVisible() ? "Hide" : "Open", enabled: true, visible: true },
                     { id: 2, label: "About", enabled: true, visible: true },
-                    { id: 3, label: "Repair Nightcord", enabled: true, visible: true },
-                    { id: 4, label: "Reset Nightcord", enabled: true, visible: true },
+                    { id: 3, label: "Repair LumenCord", enabled: true, visible: true },
+                    { id: 4, label: "Reset LumenCord", enabled: true, visible: true },
                     { id: 5, label: "Launch Arguments", enabled: true, visible: true },
                     {
                         id: 6,
@@ -325,7 +325,7 @@ export async function initTray(win: BrowserWindow, setIsQuitting: (val: boolean)
             click: createAboutWindow
         },
         {
-            label: "Repair Nightcord",
+            label: "Repair LumenCord",
             async click() {
                 await downloadVencordAsar();
                 destroyTray();
@@ -334,7 +334,7 @@ export async function initTray(win: BrowserWindow, setIsQuitting: (val: boolean)
             }
         },
         {
-            label: "Reset Nightcord",
+            label: "Reset LumenCord",
             async click() {
                 await clearData(win);
             }
@@ -373,7 +373,7 @@ export async function initTray(win: BrowserWindow, setIsQuitting: (val: boolean)
     try {
         const initialImage = await getCachedTrayImage(trayVariant);
         tray = new Tray(initialImage);
-        tray.setToolTip("Nightcord");
+        tray.setToolTip("LumenCord");
 
         if (isLinux) {
             tray.on("click", onTrayClick);

@@ -5,7 +5,6 @@
  */
 
 import "./fixDiscordBadgePadding.css";
-import {domain} from "../../../../DOMAIN.json"
 
 import { _getBadges, BadgePosition, BadgeUserArgs, ProfileBadge } from "@api/Badges";
 import { loadOwnHiddenBadgeSources } from "@api/BadgeVisibility";
@@ -92,19 +91,12 @@ async function loadBadges(url: string, noCache = false) {
     }
 }
 
+// LumenCord badges come from badges.json in the LumenCord GitHub repo (edit that file to give people badges).
+// Format: { "<discord user id>": [{ "badge": "<image url>", "tooltip": "<text>" }] }
+const LUMENCORD_BADGES_URL = "https://raw.githubusercontent.com/8wmc/LumenCord/main/badges.json";
+
 async function loadNightcordBadges(noCache = false): Promise<Record<string, any>> {
-    // Use main-process net.fetch to bypass CORS restrictions on the Nightcord API.
-    // Only available in desktop (Electron) context.
-    if (IS_WEB || typeof VencordNative?.nightcord?.netFetch !== "function") {
-        return loadBadges(`https://api.${domain}/badges`, noCache);
-    }
-    try {
-        const res = await VencordNative.nightcord.netFetch(`https://api.${domain}/badges`, { noCache });
-        if (!res?.ok || !res.data || typeof res.data !== "object") return {};
-        return res.data as Record<string, any>;
-    } catch {
-        return {};
-    }
+    return loadBadges(LUMENCORD_BADGES_URL, noCache);
 }
 
 async function loadAllBadges(noCache = false) {
@@ -368,7 +360,7 @@ export default definePlugin({
                 .filter(badge => badge && (badge.icon || badge.badge) && badge.visible !== false)
                 .map(badge => {
                     const iconSrc = badge.icon || badge.badge;
-                    const description = badge.placeholder || badge.description || badge.tooltip || "Nightcord Badge";
+                    const description = badge.placeholder || badge.description || badge.tooltip || "LumenCord Badge";
                     const badgeId = badge.uuid || badge.id || `nightcord-${description}-${userId}`;
 
                     return {
@@ -394,7 +386,7 @@ export default definePlugin({
                                 description,
                                 placeholder: description,
                                 ...badge
-                            }, "Nightcord");
+                            }, "LumenCord");
                         }
                     } satisfies ProfileBadge;
                 });

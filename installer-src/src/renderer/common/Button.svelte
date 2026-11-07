@@ -26,12 +26,12 @@
         text-decoration: none;
         transition: 150ms ease;
         cursor: pointer;
-        padding: 0 12px;
-        height: 28px;
+        padding: 0 16px;
+        height: 30px;
         white-space: nowrap;
         font-size: 12px;
-        font-weight: 400;
-        border-radius: 2px;
+        font-weight: 600;
+        border-radius: 8px;
     }
 
     .button[disabled] {
@@ -46,22 +46,29 @@
     }
 
     .button.type-primary {
-        border: 1px solid transparent;
-        background-color: var(--accent);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: var(--accent-gradient);
         color: #ffffff;
+        box-shadow: var(--accent-glow);
     }
 
     .button.type-primary:hover {
-        background-color: var(--accent-hover);
+        filter: brightness(1.12);
+        box-shadow: 0 0 24px rgba(192, 132, 252, 0.6);
+    }
+
+    .button.type-primary:active {
+        transform: translateY(1px);
     }
 
     .button.type-secondary {
-        background-color: transparent;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        background-color: rgba(124, 92, 255, 0.08);
+        border: 1px solid var(--surface-border);
         color: var(--text-normal);
     }
 
     .button.type-secondary:hover {
-        border-color: rgba(255, 255, 255, 0.1);
+        border-color: var(--surface-border-strong);
+        color: var(--text-light);
     }
 </style>

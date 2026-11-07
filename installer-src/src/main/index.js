@@ -19,7 +19,7 @@ function createMainWindow() {
         resizable: false,
         fullscreenable: false,
         maximizable: false,
-        backgroundColor: "#0c0d10",
+        backgroundColor: "#0d0a24",
         show: true,
         webPreferences: {
             nodeIntegration: true,

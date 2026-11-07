@@ -134,7 +134,7 @@ function fetchJsonWithFallback(url) {
                 resolve(parsed);
             } catch (psErr) {
                 try {
-                    const curlOut = execSync(`curl.exe -skL -H "User-Agent: LumenCord-Installer/1.0" -H "Accept: application/json" "${url}"`, { encoding: "utf8", timeout: 15000 });
+                    const curlOut = execSync(`curl.exe -sSfL -H "User-Agent: LumenCord-Installer/1.0" -H "Accept: application/json" "${url}"`, { encoding: "utf8", timeout: 15000 });
                     const parsed = JSON.parse(curlOut.trim());
                     resolve(parsed);
                 } catch (curlErr) {
@@ -149,8 +149,7 @@ function fetchJsonWithFallback(url) {
                 headers: {
                     "User-Agent": "LumenCord-Installer/1.0",
                     "Accept": "application/json"
-                },
-                rejectUnauthorized: false
+                }
             }, (res) => {
                 if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308) {
                     const loc = res.headers.location;
@@ -204,7 +203,7 @@ function downloadFileAsync(url, destPath, onProgress) {
                 resolve();
             } catch (psErr) {
                 try {
-                    execSync(`curl.exe -skL "${url}" -o "${destPath}"`, { timeout: 120000 });
+                    execSync(`curl.exe -sSfL "${url}" -o "${destPath}"`, { timeout: 120000 });
                     resolve();
                 } catch (curlErr) {
                     reject(origErr || psErr || curlErr);
@@ -215,8 +214,7 @@ function downloadFileAsync(url, destPath, onProgress) {
         try {
             const client = url.startsWith("https") ? https : http;
             const req = client.get(url, {
-                headers: { "User-Agent": "LumenCord-Installer/1.0" },
-                rejectUnauthorized: false
+                headers: { "User-Agent": "LumenCord-Installer/1.0" }
             }, (response) => {
                 if (response.statusCode === 301 || response.statusCode === 302 || response.statusCode === 307 || response.statusCode === 308) {
                     file.close();
@@ -274,7 +272,8 @@ async function downloadDist() {
         const release = await fetchJsonWithFallback(RELEASE_API);
         const asset = release && release.assets && release.assets.find(a => a.name && a.name.toLowerCase() === DIST_ZIP);
         assetUrl = asset && asset.browser_download_url;
-        nightcordVersion = release && release.tag_name;
+        // The tag is always "latest"; the release title holds the real version (e.g. "LumenCord v1.32.7").
+        nightcordVersion = (release && (/v?\d+(\.\d+)+/.exec(release.name || "") || [])[0]) || (release && release.tag_name) || "";
         if (!assetUrl) {
             throw new Error(`Asset '${DIST_ZIP}' not found in the latest release`);
         }
@@ -286,7 +285,7 @@ async function downloadDist() {
         throw error;
     }
 
-    const tmpZip = path.join(remote.app.getPath("temp"), "nightcord-dist.zip");
+    const tmpZip = path.join(remote.app.getPath("temp"), "lumencord-dist.zip");
     log(`Downloading LumenCord ${nightcordVersion} package...`);
     try {
         await downloadFileAsync(assetUrl, tmpZip, (percent, downloaded, total) => {

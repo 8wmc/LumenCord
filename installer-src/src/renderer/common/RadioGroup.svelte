@@ -32,9 +32,10 @@
         top: 0;
         left: 0;
         width: 100%;
-        height: 40px;
-        background-color: var(--accent);
-        border-radius: 3px;
+        height: 42px; /* 40px item + 1px border top and bottom */
+        background: var(--accent-gradient);
+        box-shadow: var(--accent-glow);
+        border-radius: 10px;
         transition: 250ms ease;
         z-index: 0;
         transform: translateY(calc((100% + 12px) * var(--index)));

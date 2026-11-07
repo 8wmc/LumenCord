@@ -7,7 +7,7 @@
 const STYLE_ID = "nc-fullscreen-overlay-style";
 
 const CSS_RULES = `
-/* ── Nightcord Fullscreen Plugins Overlay Styles ──
+/* ── LumenCord Fullscreen Plugins Overlay Styles ──
    Hides Discord's bottom-left user profile panel and sidebar panels
    strictly when a fullscreen plugin overlay (YouTube, Private Browser, QxChat) is active.
    Restores instantly and completely when the plugin view is closed. */

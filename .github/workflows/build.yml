@@ -30,6 +30,14 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
+            # Every upload gets a higher version number (1.32.<run number>), so the
+            # in-app updater can tell there is something new without anyone editing files.
+            - name: Set version number
+              run: |
+                  jq --arg v "1.32.${{ github.run_number }}" '.version = $v' package.json > package.tmp.json
+                  mv package.tmp.json package.json
+                  echo "Building LumenCord v$(jq -r .version < package.json)"
+
             - name: Build web
               run: pnpm buildWebStandalone
 

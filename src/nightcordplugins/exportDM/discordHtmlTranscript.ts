@@ -485,7 +485,7 @@ export function generateDiscordHtmlTranscript(messages: TranscriptMessage[], cha
 
         <!-- Footer -->
         <div class="sweety-footer">
-            Exported ${totalMessages} message${totalMessages > 1 ? "s" : ""}. Powered by <a href="https://github.com/Ganyu-Studios/sweety-html-transcripts" target="_blank" rel="noreferrer">sweety-html-transcripts</a> &amp; Nightcord.
+            Exported ${totalMessages} message${totalMessages > 1 ? "s" : ""}. Powered by <a href="https://github.com/Ganyu-Studios/sweety-html-transcripts" target="_blank" rel="noreferrer">sweety-html-transcripts</a> &amp; LumenCord.
         </div>
     </discord-messages>
 </body>

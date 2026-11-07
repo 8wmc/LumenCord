@@ -521,7 +521,7 @@ export default definePlugin({
         if (!isOriginalDev && !isNightcordGroup) return null;
         if (RelationshipStore.isFriend(userId) || isAnyPluginDev(UserStore.getCurrentUser()?.id)) return null;
 
-        const developerText = isOriginalDev ? "Equicord & Vencord plugin developers" : "Nightcord developers";
+        const developerText = isOriginalDev ? "Equicord & Vencord plugin developers" : "LumenCord developers";
 
         return (
             <Card variant="warning" className={Margins.top8} defaultPadding>

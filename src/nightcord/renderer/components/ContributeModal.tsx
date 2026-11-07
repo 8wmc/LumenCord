@@ -174,10 +174,10 @@ export function ContributeModal(props: ModalProps) {
             <ModalHeader separator={false} style={{ paddingTop: "24px", paddingBottom: "12px" }}>
                 <Flex direction={Flex.Direction.VERTICAL} align={Flex.Align.CENTER} style={{ width: "100%" }}>
                     <Heading level={2} variant="heading-xl/bold" style={{ color: "#ffffff" }}>
-                        {t("Support Nightcord Project")}
+                        {t("Support LumenCord Project")}
                     </Heading>
                     <Paragraph style={{ textAlign: "center", color: "#dbdee1", fontSize: "13px", marginTop: "6px", maxWidth: "440px", lineHeight: "1.4" }}>
-                        {t("Nightcord is an independently developed project. Your donations directly contribute to server maintenance, developing new features, and ongoing updates.")}
+                        {t("LumenCord is an independently developed project. Your donations directly contribute to server maintenance, developing new features, and ongoing updates.")}
                     </Paragraph>
                 </Flex>
             </ModalHeader>
@@ -200,7 +200,7 @@ export function ContributeModal(props: ModalProps) {
                     textAlign: "center"
                 }}>
                     <Paragraph size="xs" style={{ fontSize: "12px", margin: 0, color: "#dbdee1" }}>
-                        {t("Thank you for supporting the Nightcord project!")}
+                        {t("Thank you for supporting the LumenCord project!")}
                     </Paragraph>
                 </div>
             </ModalContent>

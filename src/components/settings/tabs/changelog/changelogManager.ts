@@ -5,7 +5,6 @@
  */
 
 import { DataStore } from "@api/index";
-import {domain} from "../../../../../DOMAIN.json";
 
 import gitHash from "~git-hash";
 import plugins from "~plugins";
@@ -36,9 +35,10 @@ const LAST_SEEN_HASH_KEY = "EquicordChangelog_LastSeenHash";
 const KNOWN_PLUGINS_KEY = "EquicordChangelog_KnownPlugins";
 const KNOWN_SETTINGS_KEY = "EquicordChangelog_KnownSettings";
 const LAST_REPO_CHECK_KEY = "EquicordChangelog_LastRepoCheck";
-const GITEA_API_BASE = `https://source.${domain}/api/v1/repos`;
-const NIGHTCORD_RELEASES_REPO = "nightcord/nightcord";
-const NIGHTCORD_REPO_URL = `https://source.${domain}/${NIGHTCORD_RELEASES_REPO}`;
+// LumenCord: changelog comes from LumenCord's own GitHub repository.
+const GITHUB_API_BASE = "https://api.github.com/repos";
+const NIGHTCORD_RELEASES_REPO = "8wmc/LumenCord";
+const NIGHTCORD_REPO_URL = `https://github.com/${NIGHTCORD_RELEASES_REPO}`;
 
 type KnownPluginSettingsMap = Map<string, Set<string>>;
 
@@ -63,21 +63,27 @@ async function fetchCommitsBetween(
 ): Promise<ChangelogEntry[]> {
     if (!repoSlug || typeof fetch !== "function") return [];
     try {
+        // "Latest changes" view: GitHub's commit list is simpler and always works.
+        const url = fromHash === "HEAD~10" && toHash === "HEAD"
+            ? `${GITHUB_API_BASE}/${repoSlug}/commits?per_page=10`
+            : `${GITHUB_API_BASE}/${repoSlug}/compare/${fromHash}...${toHash}`;
         const res = await fetch(
-            `${GITEA_API_BASE}/${repoSlug}/compare/${fromHash}...${toHash}`,
+            url,
             {
+                // Only simple headers: GitHub's CORS rules reject extras like Cache-Control.
                 headers: {
-                    Accept: "application/json",
-                    "Cache-Control": "no-cache",
+                    Accept: "application/vnd.github+json",
                 },
+                cache: "no-store",
             },
         );
 
         if (!res.ok) return [];
         const data = await res.json();
-        if (!data || !Array.isArray(data.commits)) return [];
+        const commits = Array.isArray(data) ? data : data?.commits;
+        if (!Array.isArray(commits)) return [];
 
-        return data.commits.map((commit: any) => {
+        return commits.map((commit: any) => {
             const message: string = commit?.commit?.message ?? "";
             const summary = message.split("\n")[0] || "No message";
             const authorName =

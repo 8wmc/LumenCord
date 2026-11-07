@@ -13,6 +13,7 @@ import { debounce } from "@shared/debounce";
 import { Margins } from "@utils/margins";
 import { classes } from "@utils/misc";
 import { useIntersection } from "@utils/react";
+import { findAll } from "@webpack";
 import { Clickable, TextInput, useCallback, useEffect, useMemo, useState } from "@webpack/common";
 
 import { IconsDef } from "../types";
@@ -20,16 +21,40 @@ import { openIconModal } from "./Modals";
 
 let cachedIcons: IconsDef | null = null;
 
+function collectIcons(source: any, into: IconsDef) {
+    if (!source || typeof source !== "object") return;
+    for (const name of Object.keys(source)) {
+        try {
+            const fn = source[name];
+            if (typeof fn === "function" && name.endsWith("Icon") && !(name in into)) into[name] = fn;
+        } catch { }
+    }
+}
+
+// LumenCord: never crash the tab. If Discord changed its code and the normal hook missed,
+// look through Discord's loaded modules for icon sets instead.
 function getIcons(): IconsDef {
-    if (cachedIcons) return cachedIcons;
+    if (cachedIcons && Object.keys(cachedIcons).length) return cachedIcons;
 
-    cachedIcons = Object.fromEntries(
-        Object.entries(iconsModule).filter(([name, fn]) =>
-            typeof fn === "function" && name.endsWith("Icon")
-        )
-    );
+    const icons: IconsDef = {};
+    collectIcons(iconsModule, icons);
 
-    return cachedIcons;
+    if (Object.keys(icons).length < 50) {
+        try {
+            const isIconSet = (m: any) => {
+                if (!m || typeof m !== "object") return false;
+                let count = 0;
+                for (const key in m) {
+                    if (key.endsWith("Icon") && typeof m[key] === "function" && ++count >= 10) return true;
+                }
+                return false;
+            };
+            for (const mod of findAll(isIconSet)) collectIcons(mod, icons);
+        } catch { }
+    }
+
+    cachedIcons = icons;
+    return icons;
 }
 
 function searchMatch(search: string, name: string, Icon: any, searchByFunction: boolean): boolean {
@@ -102,6 +127,18 @@ function IconsTab() {
 
     const visibleIcons = filteredIcons.slice(0, visibleCount);
 
+    if (!Object.keys(icons).length) {
+        return (
+            <SettingsTab>
+                <Heading className={Margins.top16} tag="h3">Icon Finder</Heading>
+                <p style={{ color: "var(--text-muted)", fontSize: 14, lineHeight: 1.5 }}>
+                    Discord changed how it stores its icons, so the Icon Finder can't load them in this Discord version.
+                    Everything else keeps working. This will be fixed in a future LumenCord update.
+                </p>
+            </SettingsTab>
+        );
+    }
+
     return (
         <SettingsTab>
             <div className={classes(Margins.top16, "vc-icon-tab-search-bar-grid")}>
@@ -130,4 +167,4 @@ function IconsTab() {
     );
 }
 
-export default wrapTab(IconsTab, "IconsTab");
+export default wrapTab(IconsTab, "Icon Finder");

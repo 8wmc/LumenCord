@@ -19,32 +19,35 @@
 </div>
 
 <style>
-    @import url("https://rsms.me/inter/inter.css");
-
     :global([data-focus-visible-added]) {
         box-shadow: 0 0 0 4px var(--accent-faded) !important;
     }
 
     :root {
 
-        /* Primary backgrounds */
-        --bg1: #040405;
-        --bg2: #0c0d10;
-        --bg2-alt: #101116;
-        --bg3: #14151b;
-        --bg3-alt: #191a21;
-        --bg4: #20212b;
+        /* LumenCord palette: deep purple / navy with a violet glow */
+        --bg1: #07051a;
+        --bg2: #0d0a24;
+        --bg2-alt: #140e33;
+        --bg3: rgba(124, 92, 255, 0.08);
+        --bg3-alt: rgba(124, 92, 255, 0.14);
+        --bg4: #241a55;
+        --surface-border: rgba(167, 139, 250, 0.16);
+        --surface-border-strong: rgba(192, 132, 252, 0.45);
 
         /* Text Colors */
-        --text-light: #f1f1f1;
-        --text-normal: #bfc4c9;
-        --text-muted: #95989d;
-        --text-link: #a78bfa;
+        --text-light: #f6f2ff;
+        --text-normal: #d6cff5;
+        --text-muted: #9c94c4;
+        --text-link: #c4b5fd;
 
         /* Accent colors */
-        --accent: #7c3aed;
-        --accent-hover: #6d28d9;
-        --accent-faded: rgba(124, 58, 237, 0.4);
+        --accent: #8b5cf6;
+        --accent-2: #c026d3;
+        --accent-hover: #7c3aed;
+        --accent-faded: rgba(139, 92, 246, 0.4);
+        --accent-gradient: linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #d946ef 100%);
+        --accent-glow: 0 0 18px rgba(168, 85, 247, 0.45);
 
         /* Danger colors */
         --danger: #c13a3a;
@@ -66,7 +69,7 @@
     :global(*::before) {
         box-sizing: border-box;
         -webkit-user-drag: none;
-        font-family: "Inter", sans-serif;
+        font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
         user-select: none;
         outline: none;
     }
@@ -131,8 +134,27 @@
         flex-direction: column;
         z-index: 1;
         padding: 20px;
-        background: radial-gradient(var(--bg2) 50%, var(--bg2-alt));
+        background:
+            radial-gradient(120% 70% at 85% 115%, rgba(124, 58, 237, 0.38) 0%, rgba(124, 58, 237, 0) 60%),
+            radial-gradient(90% 60% at 0% 110%, rgba(192, 38, 211, 0.22) 0%, rgba(192, 38, 211, 0) 55%),
+            radial-gradient(70% 55% at 50% -10%, rgba(139, 92, 246, 0.18) 0%, rgba(139, 92, 246, 0) 70%),
+            linear-gradient(180deg, var(--bg2) 0%, var(--bg1) 100%);
         flex: 1;
+    }
+
+    /* Soft wave along the bottom, echoing the logo */
+    .installer-body::before {
+        content: "";
+        position: absolute;
+        left: -10%;
+        right: -10%;
+        bottom: -60px;
+        height: 120px;
+        border-radius: 50%;
+        border-top: 1px solid rgba(192, 132, 252, 0.18);
+        background: linear-gradient(180deg, rgba(124, 58, 237, 0.10), rgba(124, 58, 237, 0));
+        pointer-events: none;
+        z-index: 0;
     }
 
     :global(.page) {

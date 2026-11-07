@@ -6,7 +6,7 @@
 
 ## What this is
 
-LumenCord is built on [Nightcord](https://source.nightcord.st/nightcord/nightcord) (itself a fork of
+LumenCord is built on Nightcord (itself a fork of
 [Equicord](https://github.com/Equicord/Equicord), which builds on [Vencord](https://github.com/Vendicated/Vencord)).
 
 A few things were changed from upstream Nightcord before this was rebranded:
@@ -14,13 +14,17 @@ A few things were changed from upstream Nightcord before this was rebranded:
 - **Removed:** DM Bomb, Mass DM, Flood Panel, Surveillance, and the fake "official DM" plugin that injected
   messages pretending to be from Nightcord's team. These either exist purely to spam/harass other people, or to
   impersonate an official source.
-- **Removed:** every bit of code that silently talked to Nightcord's own servers — the 2FA cloud sync, the
-  account-linking OAuth gateway, the background status pinger, and the runtime code downloader. LumenCord only
-  talks to Discord's servers and, when checking for updates, GitHub.
+- **Removed:** GhostClient, GhostInstaller, MultiInstance and TokenImporter. They saved Discord account tokens
+  (which work like passwords) in plain files, and GhostInstaller downloaded and ran programs from Nightcord's server.
+- **Removed:** every bit of code that silently talked to Nightcord's own servers: cloud sync, account linking,
+  profile lookups, plugin likes, badges, tutorial videos, the status pinger and the runtime code downloader.
+  LumenCord talks to Discord, to this GitHub repo (updates, changelog, badges), and to outside services only
+  when you turn on a plugin that needs one.
+- **Fixed:** downloads and the DM Purger email login now check HTTPS certificates properly.
 - **Removed:** the build-time code scrambling (obfuscation), so the source stays readable.
 - **Removed:** hidden invisible-character watermarking that was in the original licence text.
-- **Kept:** every other plugin, including some that only affect your own account and are used at your own risk
-  (things like FakeVoice and Server Cloner) — see `installer-src/assets/license.txt` for the terms.
+- **Kept:** the other plugins, including some that only affect your own account and are used at your own risk
+  (things like FakeVoice and Server Cloner). See `installer-src/assets/license.txt` for the terms.
 
 ## Installing
 
@@ -30,6 +34,24 @@ A few things were changed from upstream Nightcord before this was rebranded:
    run it, accept the licence, pick your Discord, and click Install.
 
 The installer is Windows-only for now. Updates inside the app come only from this repo's GitHub releases.
+Every upload to GitHub gets a new version number automatically (1.32.<build number>), so installed copies
+notice the update on their own.
+
+## LumenCord badges
+
+Edit `badges.json` in this repo to give people a badge on their profile (shown when "LumenCord Badges" is on in
+Settings → Synchronization). Example:
+
+```json
+{
+  "123456789012345678": [
+    { "badge": "https://raw.githubusercontent.com/8wmc/LumenCord/main/assets/icon.png", "tooltip": "LumenCord Creator" }
+  ]
+}
+```
+
+The long number is the person's Discord user ID (Discord → Settings → Advanced → turn on Developer Mode, then
+right-click someone → Copy User ID).
 
 ## Building from source (Windows)
 

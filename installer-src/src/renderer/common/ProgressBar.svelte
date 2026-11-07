@@ -24,7 +24,8 @@
         overflow: hidden;
         transition: 500ms ease width, 150ms ease background-color;
         transform-origin: left;
-        background-color: var(--accent);
+        background: var(--accent-gradient);
+        box-shadow: var(--accent-glow);
     }
 
     :global(.progress-bar.error .progress-fill) {

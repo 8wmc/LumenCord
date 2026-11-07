@@ -123,7 +123,7 @@ const settings = definePluginSettings({
 
 export default definePlugin({
     name: "NightcordHelper",
-    description: "Main Nightcord plugin: fixes Discord crashes, adds UI options and manages internal commands.",
+    description: "Main LumenCord plugin: fixes Discord crashes, adds UI options and manages internal commands.",
     authors: [
         Devs.thororen,
         EquicordDevs.nyx,
@@ -275,9 +275,9 @@ export default definePlugin({
             if (!selfId || isAnyPluginDev(selfId)) return;
             if (VC_SUPPORT_CHANNEL_IDS.includes(channelId) && !clicked) {
                 return Alerts.show({
-                    title: "Nightcord Support Channel Warning",
-                    body: "Before asking for help. Check updates and if this issue is actually caused by Nightcord!",
-                    confirmText: "Nightcord Support",
+                    title: "LumenCord Support Channel Warning",
+                    body: "Before asking for help. Check updates and if this issue is actually caused by LumenCord!",
+                    confirmText: "LumenCord Support",
                     onConfirm() {
                         NavigationRouter.transitionTo(`/channels/${GUILD_ID}/${SUPPORT_CHANNEL_ID}`);
                     },

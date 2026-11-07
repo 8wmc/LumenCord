@@ -18,7 +18,7 @@ export function isStealthEnabled(): boolean {
 export default definePlugin({
     name: "StealthMode",
     enabledByDefault: true,
-    description: "Hides all plugin buttons without disabling them. Shortcut: Ctrl+Shift+H. The toggle is in Nightcord Settings.",
+    description: "Hides all plugin buttons without disabling them. Shortcut: Ctrl+Shift+H. The toggle is in LumenCord Settings.",
     authors: [{ name: "Nightcord",
      id: 0n }],
     required: true,

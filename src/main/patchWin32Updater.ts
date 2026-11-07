@@ -18,7 +18,7 @@ function patchCurrentDiscordOnly() {
             patchResourcesDir(currentResources, join(__dirname, "patcher.js"));
         }
     } catch (e) {
-        console.error("[Nightcord] patchCurrentDiscordOnly error:", e);
+        console.error("[LumenCord] patchCurrentDiscordOnly error:", e);
     }
 }
 

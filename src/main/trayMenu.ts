@@ -94,18 +94,18 @@ function openAboutWindow() {
 function createNightcordMenuItems(): MenuItemConstructorOptions[] {
     return [
         {
-            label: "Nightcord",
+            label: "LumenCord",
             submenu: [
                 {
-                    label: "About Nightcord",
+                    label: "About LumenCord",
                     click: () => openAboutWindow()
                 },
                 {
-                    label: cachedUpdateAvailable ? "Update Nightcord" : "Check for Updates",
+                    label: cachedUpdateAvailable ? "Update LumenCord" : "Check for Updates",
                     click: () => sendToRenderer(IpcEvents.TRAY_CHECK_UPDATES)
                 },
                 {
-                    label: "Repair Nightcord",
+                    label: "Repair LumenCord",
                     click: () => sendToRenderer(IpcEvents.TRAY_REPAIR)
                 },
                 { type: "separator" },

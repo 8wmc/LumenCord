@@ -26,7 +26,6 @@ import {
     getVaultMetadata,
     VaultMetadata
 } from "./cloudSync";
-import { openCloudSyncModal } from "./CloudSyncModal";
 import {
     addTotpAccount,
     deleteTotpAccount,
@@ -61,14 +60,6 @@ function ShieldKeyIcon({ size = 20 }: { size?: number }) {
                 strokeWidth="2"
                 strokeLinecap="round"
             />
-        </svg>
-    );
-}
-
-function CloudIcon() {
-    return (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6 }}>
-            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
         </svg>
     );
 }
@@ -329,8 +320,6 @@ export function AddEditAccountModal({ account, onClose, onSaved }: AddEditModalP
             return;
         }
 
-        const isNew = !account;
-
         if (account) {
             await updateTotpAccount(account.id, {
                 name: name.trim(),
@@ -356,16 +345,7 @@ export function AddEditAccountModal({ account, onClose, onSaved }: AddEditModalP
         onSaved();
         onClose();
 
-        // If new account added, prompt for cloud sync
-        if (isNew) {
-            getVaultMetadata().then(meta => {
-                if (!meta.hasCloudBackup) {
-                    setTimeout(() => {
-                        openCloudSyncModal("sync");
-                    }, 500);
-                }
-            });
-        }
+        // LumenCord: the 2FA cloud vault is disabled, so no cloud prompt. Codes stay on this device.
     };
 
     return (
@@ -565,7 +545,7 @@ export function TotpSettingsPanel() {
                     </div>
                     <div>
                         <div className="totp-main-title">
-                            {t("Nightcord 2FA Authenticator")}
+                            {t("LumenCord 2FA Authenticator")}
                         </div>
                         <Paragraph size="xs" color="text-muted">
                             {accounts.length} {accounts.length === 1 ? t("account configured") : t("accounts configured")}
@@ -582,18 +562,6 @@ export function TotpSettingsPanel() {
                 </div>
 
                 <div className="totp-action-bar-right">
-                    <Button
-                        size="small"
-                        variant="secondary"
-                        onClick={() => openCloudSyncModal("sync", () => {
-                            getTotpAccounts().then(setAccounts);
-                            getVaultMetadata().then(setVaultMeta);
-                        })}
-                        title={t("Zero-Knowledge Cloud Backup (AES-256 + ChaCha20)")}
-                    >
-                        <CloudIcon />
-                        {t("Cloud Sync")}
-                    </Button>
                     <Button
                         size="small"
                         variant="secondary"
@@ -656,7 +624,7 @@ export function TotpSettingsPanel() {
                                     {t("No 2FA accounts yet")}
                                 </Heading>
                                 <Paragraph size="sm" color="text-muted" style={{ maxWidth: 360, textAlign: "center", marginBottom: 16 }}>
-                                    {t("Store your 2FA authentication secret keys securely in Nightcord and generate instant 6-digit verification codes.")}
+                                    {t("Store your 2FA authentication secret keys securely in LumenCord and generate instant 6-digit verification codes.")}
                                 </Paragraph>
                                 <div style={{ display: "flex", gap: 10 }}>
                                     <Button
@@ -666,17 +634,6 @@ export function TotpSettingsPanel() {
                                     >
                                         <PlusIcon />
                                         {t("Add your first account")}
-                                    </Button>
-                                    <Button
-                                        size="medium"
-                                        variant="secondary"
-                                        onClick={() => openCloudSyncModal("restore", () => {
-                                            getTotpAccounts().then(setAccounts);
-                                            getVaultMetadata().then(setVaultMeta);
-                                        })}
-                                    >
-                                        <CloudIcon />
-                                        {t("Restore from Cloud")}
                                     </Button>
                                 </div>
                             </div>

@@ -42,7 +42,7 @@ function TotpHeaderButton() {
     return (
         <HeaderBarButton
             icon={ShieldKeyHeaderIcon}
-            tooltip={t("Nightcord 2FA Authenticator")}
+            tooltip={t("LumenCord 2FA Authenticator")}
             onClick={openTotpModal}
         />
     );
@@ -75,7 +75,7 @@ export default definePlugin({
         {
             inputType: ApplicationCommandInputType.BUILT_IN,
             name: "2fa",
-            description: "Open the integrated Nightcord 2FA Authenticator",
+            description: "Open the integrated LumenCord 2FA Authenticator",
             execute: async () => {
                 openTotpModal();
             }
@@ -83,7 +83,7 @@ export default definePlugin({
         {
             inputType: ApplicationCommandInputType.BUILT_IN,
             name: "totp",
-            description: "Open the integrated Nightcord 2FA Authenticator",
+            description: "Open the integrated LumenCord 2FA Authenticator",
             execute: async () => {
                 openTotpModal();
             }

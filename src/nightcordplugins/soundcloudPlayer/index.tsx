@@ -3413,7 +3413,7 @@ async function _doUpdateRichPresence() {
                 assets,
                 buttons: ["Download"],
                 metadata: {
-                    button_urls: ["https://nightcord.st"],
+                    button_urls: ["https://github.com/8wmc/LumenCord/releases"],
                 },
                 flags: 1,
             }

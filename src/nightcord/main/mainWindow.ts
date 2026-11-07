@@ -85,25 +85,25 @@ function initMenuBar(win: BrowserWindow) {
 
     const subMenu = [
         {
-            label: "About Nightcord",
+            label: "About LumenCord",
             click: createAboutWindow
         },
         {
-            label: "Force Update Nightcord",
+            label: "Force Update LumenCord",
             async click() {
                 await downloadVencordAsar();
                 destroyTray();
                 app.relaunch();
                 app.quit();
             },
-            toolTip: "Nightcord will automatically restart after this operation"
+            toolTip: "LumenCord will automatically restart after this operation"
         },
         {
-            label: "Reset Nightcord",
+            label: "Reset LumenCord",
             async click() {
                 await clearData(win);
             },
-            toolTip: "Nightcord will automatically restart after this operation"
+            toolTip: "LumenCord will automatically restart after this operation"
         },
         {
             label: "Relaunch",
@@ -171,7 +171,7 @@ function initMenuBar(win: BrowserWindow) {
 
     const menuItems = [
         {
-            label: "Nightcord",
+            label: "LumenCord",
             role: "appMenu",
             submenu: subMenu.filter(isTruthy)
         },
@@ -277,7 +277,7 @@ function initStaticTitle(win: BrowserWindow) {
 
     addSettingsListener("staticTitle", enabled => {
         if (enabled) {
-            win.setTitle("Nightcord");
+            win.setTitle("LumenCord");
             win.on("page-title-updated", listener);
         } else {
             win.off("page-title-updated", listener);
@@ -375,7 +375,7 @@ function buildBrowserWindowOptions(): BrowserWindowConstructorOptions {
     }
 
     if (staticTitle) {
-        options.title = "Nightcord";
+        options.title = "LumenCord";
     }
 
     if (process.platform === "darwin") {

@@ -257,7 +257,7 @@ export function ProfileEffectsSettingsSection() {
                             lineHeight: 1.4
                         }}
                     >
-                        {t("Nightcord Custom Profile — Elegance & Customization")}
+                        {t("LumenCord Custom Profile — Elegance & Customization")}
                     </div>
                     <div
                         data-nc-profile-font={cfg.profileFont || "none"}

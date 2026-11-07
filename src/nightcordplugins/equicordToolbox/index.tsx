@@ -31,7 +31,7 @@ function Icon(props: React.SVGProps<SVGSVGElement>) {
 migratePluginSettings("EquicordToolbox", "VencordToolbox");
 export default definePlugin({
     name: "EquicordToolbox",
-    description: "Adds a button next to the inbox button in the channel header that houses Nightcord quick actions",
+    description: "Adds a button next to the inbox button in the channel header that houses LumenCord quick actions",
     authors: [Devs.Ven, Devs.AutumnVN],
     hidden: true,
     dependencies: ["HeaderBarAPI"],

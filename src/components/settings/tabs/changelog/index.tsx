@@ -553,7 +553,7 @@ function ChangelogContent() {
 
             <Heading className={Margins.top20}>{t("Repository")}</Heading>
             <Paragraph className={Margins.bottom8}>
-                {t("This is the GitHub repository where Nightcord fetches updates from.")}
+                {t("This is the GitHub repository where LumenCord fetches updates from.")}
             </Paragraph>
             <Paragraph color="text-subtle">
                 {repoPending ? (

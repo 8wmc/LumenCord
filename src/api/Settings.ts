@@ -170,7 +170,7 @@ const DefaultSettings: Settings = {
 
     cloud: {
         authenticated: false,
-        url: "https://api.nightcord.st/",
+        url: "https://cloud.equicord.org/",
         settingsSync: false,
         settingsSyncVersion: 0
     },

@@ -386,7 +386,8 @@ export function PluginCard({ plugin, disabled, onRestartNeeded, onMouseEnter, on
     // pas User Plugins), et jamais aux plugins required (y compris ceux affichés comme
     // required parce qu'une dépendance active en a besoin, d'où le check sur `disabled`).
     const isNightcordFolderPlugin = (PluginMeta[plugin.name]?.folderName?.startsWith("src/nightcordplugins/") ?? false) && !PluginMeta[plugin.name]?.userPlugin && !(plugin as any).isUserPlugin;
-    const canShowLikeBadge = isNightcordFolderPlugin && !plugin.required && !disabled;
+    // LumenCord: plugin likes needed Nightcord's server, so the like badge is hidden.
+    const canShowLikeBadge = false && isNightcordFolderPlugin && !plugin.required && !disabled;
 
     function openCreditsModal() {
         openModal(props => (
@@ -397,8 +398,7 @@ export function PluginCard({ plugin, disabled, onRestartNeeded, onMouseEnter, on
                 </ModalHeader>
                 <ModalContent style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "16px", alignItems: "center" } as any}>
                     {isNightcord ? (
-                        <a href="https://source.nightcord.st/nightcord/nightcord" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none", color: "var(--text-normal)", fontSize: "20px", fontWeight: 600 }}>
-                            <img src="https://source.nightcord.st/assets/img/logo.svg" alt="Nightcord" style={{ width: 64, height: 64, borderRadius: "50%" }} />
+                        <a href="https://github.com/8wmc/LumenCord#credits--licence" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none", color: "var(--text-normal)", fontSize: "20px", fontWeight: 600 }}>
                             Nightcord
                         </a>
                     ) : (
@@ -439,7 +439,7 @@ export function PluginCard({ plugin, disabled, onRestartNeeded, onMouseEnter, on
             infoButton={
                 <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                     {(plugin.name === "DynamicIslande" || plugin.name === "StereoInstaller" || plugin.name === "ClientDiagnostics" || plugin.name === "SecureBookmarks" || plugin.name === "StatusCycler" || plugin.name === "Surveillance" || plugin.name === "MutualScanner") && (
-                        <Tooltip text="This plugin comes from our partner (Illegalcord) then was modified by Nightcord.">
+                        <Tooltip text="This plugin comes from our partner (Illegalcord) then was modified by LumenCord.">
                             {({ onMouseEnter, onMouseLeave }) => (
                                 <button
                                     role="button"

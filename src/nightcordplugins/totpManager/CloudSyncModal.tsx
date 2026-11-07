@@ -56,7 +56,7 @@ export function CloudSyncModal({ initialMode = "sync", onClose, onCompleted }: C
             if (ok) {
                 const token = await getValidCloudToken(false);
                 setCloudToken(token);
-                showToast(t("Connected to Nightcord Cloud!"), Toasts.Type.SUCCESS);
+                showToast(t("Connected to LumenCord Cloud!"), Toasts.Type.SUCCESS);
             }
         } catch {
             showToast(t("Connection failed"), Toasts.Type.FAILURE);
@@ -88,7 +88,7 @@ export function CloudSyncModal({ initialMode = "sync", onClose, onCompleted }: C
             }
             const updatedMeta = await syncAccountsToCloud(password);
             setMeta(updatedMeta);
-            showToast(t("2FA Vault encrypted & synced to Nightcord Cloud!"), Toasts.Type.SUCCESS);
+            showToast(t("2FA Vault encrypted & synced to LumenCord Cloud!"), Toasts.Type.SUCCESS);
             onCompleted?.();
             onClose();
         } catch (err: any) {
@@ -118,7 +118,7 @@ export function CloudSyncModal({ initialMode = "sync", onClose, onCompleted }: C
             onClose();
         } catch (err: any) {
             if (err?.message === "NO_VAULT_FOUND") {
-                setError(t("No encrypted vault found in Nightcord Cloud"));
+                setError(t("No encrypted vault found in LumenCord Cloud"));
             } else {
                 setError(t("Incorrect master password or corrupted vault data"));
             }
@@ -141,7 +141,7 @@ export function CloudSyncModal({ initialMode = "sync", onClose, onCompleted }: C
                     </div>
                     <div>
                         <Heading level={2} style={{ color: "#ffffff", margin: 0, fontSize: 18 }}>
-                            {t("Nightcord 2FA Cloud Vault")}
+                            {t("LumenCord 2FA Cloud Vault")}
                         </Heading>
                         <Paragraph size="xs" color="text-muted">
                             {t("Zero-Knowledge End-to-End Encryption (cloud.nightcord.st)")}
@@ -192,7 +192,7 @@ export function CloudSyncModal({ initialMode = "sync", onClose, onCompleted }: C
                 </div>
 
                 <Paragraph size="xs" style={{ color: "var(--text-normal, #dbdee1)", marginTop: 8, lineHeight: 1.45 }}>
-                    {t("Your 2FA secrets are encrypted client-side using cascaded AES-256-GCM and ChaCha20-Poly1305 before being sent to Nightcord Cloud. Only you possess the key.")}
+                    {t("Your 2FA secrets are encrypted client-side using cascaded AES-256-GCM and ChaCha20-Poly1305 before being sent to LumenCord Cloud. Only you possess the key.")}
                 </Paragraph>
 
                 <div className="totp-cloud-danger-box">
@@ -205,7 +205,7 @@ export function CloudSyncModal({ initialMode = "sync", onClose, onCompleted }: C
                         {t("CRITICAL: Master Password Notice")}
                     </strong>
                     <Paragraph size="xs" style={{ color: "#f2f3f5", margin: 0, lineHeight: 1.4 }}>
-                        {t("This Master Password is the ONLY key to decrypt your 2FA vault. Nightcord servers NEVER store this password and CANNOT reset it. You must store this password in a safe place. If you lose it, your 2FA backup will be permanently lost.")}
+                        {t("This Master Password is the ONLY key to decrypt your 2FA vault. LumenCord servers NEVER store this password and CANNOT reset it. You must store this password in a safe place. If you lose it, your 2FA backup will be permanently lost.")}
                     </Paragraph>
                 </div>
             </div>

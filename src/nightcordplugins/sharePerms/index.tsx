@@ -904,7 +904,7 @@ function SharePermsModal({ rootProps }: { rootProps: any; }) {
 
                 const guild = GuildStore.getGuild(newGuildId) as any;
                 const usesInfo = newUser.maxUses > 0 ? `${newUser.maxUses} times` : "Unlimited";
-                const content = "🛡 **Nightcord — Permission Access Granted**\n\n" +
+                const content = "🛡 **LumenCord — Permission Access Granted**\n\n" +
                     "Hello! You have been granted remote administrative access to my account permissions.\n\n" +
                     `**Server:** ${guild?.name ?? newGuildId}\n` +
                     `**Validity:** ${newDuration === "0" ? "Permanent" : newDuration}\n` +
@@ -939,7 +939,7 @@ function SharePermsModal({ rootProps }: { rootProps: any; }) {
 
         if (u) {
             const guild = GuildStore.getGuild(u.guildId) as any;
-            await sendDM(u.id, "🛡 **Nightcord — Permission Access Revoked**\n\n" +
+            await sendDM(u.id, "🛡 **LumenCord — Permission Access Revoked**\n\n" +
                 "Your administrative remote access has been revoked.\n\n" +
                 `**Server:** ${guild?.name ?? u.guildId}\n` +
                 "**Status:** Access Terminated");

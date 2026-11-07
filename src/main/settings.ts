@@ -35,7 +35,7 @@ function readSettings<T = object>(name: string, file: string): Partial<T> {
                         mkdirSync(dirname(file), { recursive: true });
                         copyFileSync(cand, file);
                         const data = JSON.parse(readFileSync(file, "utf-8"));
-                        console.log(`[Nightcord] Successfully migrated ${name} settings from ${cand}`);
+                        console.log(`[LumenCord] Successfully migrated ${name} settings from ${cand}`);
                         return data;
                     } catch {}
                 }

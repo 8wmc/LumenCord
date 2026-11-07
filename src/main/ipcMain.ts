@@ -1294,7 +1294,7 @@ ipcMain.handle(IpcEvents.OPEN_MONACO_EDITOR, async (event) => {
 
     const monacoSession = session.fromPartition("monaco-editor");
     monacoWin = new BrowserWindow({
-        title: "Nightcord QuickCSS Editor",
+        title: "LumenCord QuickCSS Editor",
         autoHideMenuBar: true,
         darkTheme: true,
         webPreferences: {
@@ -1574,7 +1574,7 @@ ipcMain.handle(IpcEvents.INSTALL_VB_CABLE, async (event) => {
     const fs = require("fs");
 
     const zipUrl = "https://download.vb-audio.com/Download_Html/VBCABLE_Setup.zip";
-    const tmpDir = path.join(os.tmpdir(), "Nightcord-VBCable");
+    const tmpDir = path.join(os.tmpdir(), "LumenCord-VBCable");
     const tmpZip = path.join(os.tmpdir(), "VBCable_Setup.zip");
 
     try { if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { }
@@ -1630,7 +1630,7 @@ ipcMain.handle(IpcEvents.INSTALL_VB_CABLE, async (event) => {
 
         return { success: true };
     } catch (err: any) {
-        console.error("[Nightcord] VBCable install failed:", err);
+        console.error("[LumenCord] VBCable install failed:", err);
         return { success: false, error: "Installation failed: " + (err.message || err) };
     } finally {
         try { fs.unlinkSync(tmpZip); } catch {}

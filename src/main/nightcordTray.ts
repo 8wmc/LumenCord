@@ -43,11 +43,11 @@ export function initNightcordTray(injectorPath: string) {
             }
 
             nightcordTrayInstance = new Tray(icon);
-            nightcordTrayInstance!.setToolTip("Nightcord");
+            nightcordTrayInstance!.setToolTip("LumenCord");
 
             const trayMenu = Menu.buildFromTemplate([
                 {
-                    label: "Open Nightcord",
+                    label: "Open LumenCord",
                     click() {
                         const wins = electron.BrowserWindow.getAllWindows();
                         const main = wins.find(w => !w.isDestroyed()) ?? wins[0];
@@ -56,7 +56,7 @@ export function initNightcordTray(injectorPath: string) {
                 },
                 { type: "separator" },
                 {
-                    label: "Uninstall Nightcord",
+                    label: "Uninstall LumenCord",
                     click() {
                         const uninstallerCandidates = [
                             join(process.env.LOCALAPPDATA || "", "Programs", "nightcord", "Uninstall Nightcord.exe"),
@@ -92,9 +92,9 @@ export function initNightcordTray(injectorPath: string) {
                 }
             });
 
-            console.log("[Nightcord] Tray created ✓", iconPath ?? "(icon from exe)");
+            console.log("[LumenCord] Tray created ✓", iconPath ?? "(icon from exe)");
         } catch (e) {
-            console.error("[Nightcord] Failed to create tray:", e);
+            console.error("[LumenCord] Failed to create tray:", e);
         }
     });
 }

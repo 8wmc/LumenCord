@@ -324,7 +324,7 @@ function scanForMfaCodeInputs() {
         const btn = document.createElement("button");
         btn.className = "nightcord-2fa-quickadd-btn";
         btn.type = "button";
-        btn.innerText = t("Add to Nightcord 2FA");
+        btn.innerText = t("Add to LumenCord 2FA");
         btn.style.cssText = `
             display: flex;
             align-items: center;
@@ -383,7 +383,7 @@ function scanForMfaCodeInputs() {
                         fillCodeIntoInput(codeInput, code);
                     }
                     copyWithToast(code, t("2FA Code copied to clipboard!"));
-                    showToast(t("Discord 2FA saved in Nightcord & code filled!"), Toasts.Type.SUCCESS);
+                    showToast(t("Discord 2FA saved in LumenCord & code filled!"), Toasts.Type.SUCCESS);
                     btn.innerText = `${t("Added & Code Filled")} (${code})`;
                     btn.style.background = "var(--status-positive, #23a55a)";
                     btn.disabled = true;

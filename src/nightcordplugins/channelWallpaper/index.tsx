@@ -103,7 +103,7 @@ const settings = definePluginSettings({
     },
     syncWithFriends: {
         type: OptionType.BOOLEAN,
-        description: "Sync DM wallpapers with Nightcord friends via OAuth2 API",
+        description: "Sync DM wallpapers with LumenCord friends via OAuth2 API",
         default: true,
         restartNeeded: false,
     }
@@ -683,7 +683,7 @@ function ChannelWallpaperSettingsComponent() {
             const res = await authorizeUser();
             setToken(res);
             if (res) {
-                showToast(t("Connected to Nightcord Cloud"), Toasts.Type.SUCCESS);
+                showToast(t("Connected to LumenCord Cloud"), Toasts.Type.SUCCESS);
             }
         } finally {
             setLoadingAuth(false);
@@ -700,12 +700,12 @@ function ChannelWallpaperSettingsComponent() {
                             {t("Sync DM Wallpapers with Friends")}
                         </Text>
                         <Text variant="text-xs/normal" style={{ color: "var(--text-muted)" }}>
-                            {t("Automatically sync wallpapers in DMs with your Nightcord friends via OAuth2 API.")}
+                            {t("Automatically sync wallpapers in DMs with your LumenCord friends via OAuth2 API.")}
                         </Text>
                     </Flex>
                     {token ? (
                         <Text variant="text-sm/medium" style={{ color: "var(--text-positive)" }}>
-                            {t("Connected to Nightcord Cloud")}
+                            {t("Connected to LumenCord Cloud")}
                         </Text>
                     ) : (
                         <Button
@@ -792,7 +792,7 @@ export default definePlugin({
     name: "ChannelWallpaper",
     enabledByDefault: false,
     authors: [Devs.rushii, Devs.Nickyux],
-    description: "Allows for custom backgrounds for every individual channel and syncs DM wallpapers with friends via Nightcord API.",
+    description: "Allows for custom backgrounds for every individual channel and syncs DM wallpapers with friends via LumenCord API.",
     settings,
     settingsAboutComponent: ChannelWallpaperSettingsComponent,
 

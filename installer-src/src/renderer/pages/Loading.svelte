@@ -14,7 +14,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #1e1f22;
+        background: var(--bg2, #0d0a24);
     }
 
     .spinner {
@@ -28,7 +28,7 @@
     }
 
     .arc {
-        stroke: #5865F2;
+        stroke: #a855f7;
         transform-origin: center;
         animation: rotate 0.9s ease-in-out infinite;
     }

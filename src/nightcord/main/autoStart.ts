@@ -37,8 +37,8 @@ function makeAutoStartLinuxDesktop(): AutoStart {
             const desktopFile = stripIndent`
                 [Desktop Entry]
                 Type=Application
-                Name=Nightcord
-                Comment=Nightcord autostart script
+                Name=LumenCord
+                Comment=LumenCord autostart script
                 Exec=${getEscapedCommandLine().join(" ")}
                 StartupNotify=false
                 Terminal=false

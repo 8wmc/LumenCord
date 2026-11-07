@@ -114,10 +114,11 @@ export const TUTORIAL_VIDEOS: ReadonlyMap<string, string> = new Map([
     ["youtubePlayer", "youtubeplayer"],
 ]);
 
-export const TUTORIAL_PLUGIN_NAMES = new Set(TUTORIAL_VIDEOS.keys());
+// LumenCord: the tutorial videos were hosted on Nightcord's server, so they are switched off.
+export const TUTORIAL_PLUGIN_NAMES = new Set<string>();
 
 export function hasTutorial(pluginName: string): boolean {
-    return TUTORIAL_VIDEOS.has(pluginName);
+    return TUTORIAL_PLUGIN_NAMES.has(pluginName);
 }
 
 export function getTutorialVideoName(pluginName: string): string | undefined {

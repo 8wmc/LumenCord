@@ -4,7 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-export const API_BASE = "https://api.nightcord.st";
+// LumenCord: there is no LumenCord cloud server. Left empty so nothing can reach Nightcord's API.
+export const API_BASE = "";
 
 import { openModal } from "@utils/modal";
 import { OAuth2AuthorizeModal, React } from "@webpack/common";

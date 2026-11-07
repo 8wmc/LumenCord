@@ -95,7 +95,7 @@ export function NightcordPremiumDashboard() {
             {/* Header */}
             <div>
                 <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--header-primary, #ffffff)", margin: "0 0 6px 0" }}>
-                    Nightcord Premium
+                    LumenCord Premium
                 </h2>
                 <p style={{ fontSize: 14, color: "var(--text-muted, #949ba4)", margin: 0, lineHeight: 1.5 }}>
                     Système de profil avancé comprenant des Stories & Highlights avec musique, un lecteur de morceaux favoris sur votre profil, et des bannières animées avec effets de pseudo en direct.
@@ -131,7 +131,7 @@ export function NightcordPremiumDashboard() {
                         </div>
                         <div style={{ fontSize: 12, color: "var(--text-muted, #949ba4)" }}>
                             {isAuthed
-                                ? "Vos Stories, Musiques Favorites et Effets sont synchronisés en direct sur le cloud Nightcord."
+                                ? "Vos Stories, Musiques Favorites et Effets sont synchronisés en direct sur le cloud LumenCord."
                                 : "Connectez-vous avec Discord pour sauvegarder et partager vos données de profil publiquement."}
                         </div>
                     </div>
@@ -181,10 +181,10 @@ export function NightcordPremiumDashboard() {
                 <FormSwitch
                     value={settings.enabled}
                     onChange={(v: boolean) => updateSt({ enabled: v })}
-                    note="Active l'ensemble du système Nightcord Premium (onglet profil, cercles d'avatar et effets)."
+                    note="Active l'ensemble du système LumenCord Premium (onglet profil, cercles d'avatar et effets)."
                     hideBorder
                 >
-                    Activer Nightcord Premium
+                    Activer LumenCord Premium
                 </FormSwitch>
 
                 {settings.enabled && (

@@ -21,11 +21,11 @@ function patchLatest() {
     try {
         const stale = findStaleSibling(dirname(process.execPath));
         if (stale) {
-            console.log("[Nightcord] Detected newer Discord host version at:", stale, "— applying patch now");
+            console.log("[LumenCord] Detected newer Discord host version at:", stale, "— applying patch now");
             patchResourcesDir(stale, join(__dirname, "patcher.js"));
         }
     } catch (err) {
-        console.error("[Nightcord] Failed to repatch latest host update:", err);
+        console.error("[LumenCord] Failed to repatch latest host update:", err);
     }
 }
 
@@ -46,7 +46,7 @@ if (process.platform === "win32" || process.platform === "linux") {
             },
         });
     } catch (err) {
-        console.error("[Nightcord] Failed to proxy EventEmitter for host updates:", err);
+        console.error("[LumenCord] Failed to proxy EventEmitter for host updates:", err);
     }
 
     // 3. Periodic check every 3 minutes for background-downloaded updates

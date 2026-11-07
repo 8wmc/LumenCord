@@ -31,7 +31,7 @@ if (DEBUG_LOG_FILE) {
     try {
         writeFileSync(DEBUG_LOG_FILE, "", "utf8");
     } catch { }
-    writeDebugLine("MAIN", "Nightcord Debug Logger initialized (PID: " + process.pid + ")");
+    writeDebugLine("MAIN", "LumenCord Debug Logger initialized (PID: " + process.pid + ")");
 
     for (const method of ["log", "info", "warn", "error"] as const) {
         const orig = console[method].bind(console);
@@ -56,7 +56,7 @@ if (DEBUG_LOG_FILE) {
     freezeTimer.unref?.();
 }
 
-console.log("[Nightcord] Starting up...");
+console.log("[LumenCord] Starting up...");
 
 // Our injector file inside app.asar / app/index.js
 const injectorPath = require.main!.filename;
@@ -99,7 +99,7 @@ if (!IS_VANILLA) {
         try {
             require("./hostUpdateHook").installHostUpdateHook();
         } catch (err) {
-            console.error("[Nightcord] Failed to install host update hook", err);
+            console.error("[LumenCord] Failed to install host update hook", err);
         }
     }
 
@@ -237,14 +237,14 @@ if (!IS_VANILLA) {
             try {
                 rmSync(strayDataDir, { recursive: true, force: true });
             } catch { }
-            console.log("[Nightcord] Restored session data to official userData directory");
+            console.log("[LumenCord] Restored session data to official userData directory");
         }
     } catch (e) {
-        console.error("[Nightcord] Session migration failed:", e);
+        console.error("[LumenCord] Session migration failed:", e);
     }
 } else {
-    console.log("[Nightcord] Running in vanilla mode. Not loading Nightcord");
+    console.log("[LumenCord] Running in vanilla mode. Not loading LumenCord");
 }
 
-console.log("[Nightcord] Loading original Discord app.asar");
+console.log("[LumenCord] Loading original Discord app.asar");
 require(require.main!.filename);

@@ -136,7 +136,7 @@ interface SettingsLayoutBuilder {
 const settings = definePluginSettings({
     settingsLocation: {
         type: OptionType.SELECT,
-        description: "Where to put the Nightcord settings section",
+        description: "Where to put the LumenCord settings section",
         options: [
             { label: "At the very top", value: "top" },
             { label: "Above the Nitro section", value: "aboveNitro", default: true },
@@ -373,7 +373,7 @@ export default definePlugin({
         ].filter(isTruthy);
 
         try {
-            if (localStorage.getItem("LumenCord_stealthMode") === "1") {
+            if (localStorage.getItem("Nightcord_stealthMode") === "1") {
                 return layout;
             }
         } catch { }
@@ -447,7 +447,7 @@ export default definePlugin({
     getInfoRows() {
         const { electronVersion, chromiumVersion, getVersionInfo } = this;
 
-        const rows = [`Nightcord ${gitHashShort}${getVersionInfo()}`];
+        const rows = [`LumenCord ${gitHashShort}${getVersionInfo()}`];
 
         if (electronVersion) rows.push(`Electron ${electronVersion}`);
         if (chromiumVersion) rows.push(`Chromium ${chromiumVersion}`);

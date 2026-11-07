@@ -212,7 +212,7 @@ export default function FontsTab() {
                                             textOverflow: "ellipsis"
                                         }}
                                     >
-                                        Nightcord Discord Client 2026
+                                        LumenCord · The quick brown fox
                                     </div>
                                 </div>
                             );

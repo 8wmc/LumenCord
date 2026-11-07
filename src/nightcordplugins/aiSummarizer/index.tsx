@@ -52,7 +52,7 @@ const settings = definePluginSettings({
     },
     customApiKey: {
         type: OptionType.STRING,
-        description: "Optional custom Groq API key override (leave empty to use Nightcord AI key)",
+        description: "Optional custom Groq API key override (leave empty to use LumenCord AI key)",
         default: "",
     },
 });
@@ -173,7 +173,7 @@ function SummaryModal({ rootProps, title, subtitle, generateSummary }: SummaryMo
             try {
                 const key = await resolveApiKey();
                 if (!key) {
-                    throw new Error(t("No Groq API key configured. Please configure your key in Nightcord AI or AISummarizer settings."));
+                    throw new Error(t("No Groq API key configured. Please configure your key in LumenCord AI or AISummarizer settings."));
                 }
                 const result = await generateSummary();
                 if (mounted) {

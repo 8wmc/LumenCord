@@ -82,7 +82,7 @@ function NewPluginsModal({ modalProps, newPlugins, newSettings }: ModalComponent
 
         if (isRequired) {
             const tooltipText = p.required
-                ? "This plugin is required for Nightcord to function."
+                ? "This plugin is required for LumenCord to function."
                 : <PluginDependencyList deps={depMap[p.name]?.filter(d => settings.plugins[d]?.enabled)} />;
 
             requiredPluginCards.push(
@@ -140,7 +140,7 @@ function NewPluginsModal({ modalProps, newPlugins, newSettings }: ModalComponent
                         </span>
                     </div>
                     <Text variant="text-sm/normal" className={cl("description")}>
-                        Discover the latest plugins added to Nightcord. Enable and configure any you would like to use.
+                        Discover the latest plugins added to LumenCord. Enable and configure any you would like to use.
                     </Text>
                 </div>
                 <ModalCloseButton onClick={modalProps.onClose} />

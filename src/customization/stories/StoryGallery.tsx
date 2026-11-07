@@ -79,7 +79,7 @@ export function StoryGallery({ user }: { user: any }) {
                     </div>
                     <div>
                         <h3 className="ncp-profile-empty-title" style={{ margin: "0 0 6px 0", fontSize: 18 }}>
-                            {t("Nightcord Authentication Required")}
+                            {t("LumenCord Authentication Required")}
                         </h3>
                         <p className="ncp-profile-empty-desc" style={{ margin: "0 auto" }}>
                             {t("Connect your Discord account via OAuth2 to sync Stories on your profile.")}
@@ -124,7 +124,7 @@ export function StoryGallery({ user }: { user: any }) {
                     </div>
                     <div className="ncp-profile-empty-desc">
                         {isSelf
-                            ? t("Add stories from Nightcord Customization settings.")
+                            ? t("Add stories from LumenCord Customization settings.")
                             : t("This user hasn't shared any stories yet.")}
                     </div>
                 </div>

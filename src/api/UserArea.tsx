@@ -215,7 +215,7 @@ function UserAreaButtons({ props }: { props: UserAreaRenderProps; }) {
                     flex-shrink: 0 !important;
                 }
 
-                /* ── Nightcord UserArea Bottom-Left Buttons Hover Spring Animation ── */
+                /* ── LumenCord UserArea Bottom-Left Buttons Hover Spring Animation ── */
                 .vc-user-area-btns button svg,
                 .vc-user-area-btns [role="button"] svg,
                 .vc-user-area-btns svg {

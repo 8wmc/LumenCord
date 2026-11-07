@@ -36,7 +36,7 @@ if (location.protocol !== "data:") {
             try {
                 require(process.env.DISCORD_PRELOAD);
             } catch (e) {
-                console.error("[Nightcord] Error loading original Discord preload:", e);
+                console.error("[LumenCord] Error loading original Discord preload:", e);
             }
         }
     }

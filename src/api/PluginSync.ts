@@ -17,13 +17,19 @@ async function netFetch(url: string, opts?: { method?: string; headers?: Record<
     return res.ok ? { ok: true, status: res.status, data: await res.json() } : { ok: false, status: res.status, data: null };
 }
 
+// LumenCord: there is no LumenCord cloud server, so these never touch the network.
+// Before, viewing anyone's profile sent their user ID to Nightcord's server.
+const CLOUD_DISABLED = true;
+
 export async function getOwnPluginConfig(pluginName: string, token: string) {
+    if (CLOUD_DISABLED) throw new Error("LumenCord cloud sync is not available");
     const res = await netFetch(`${API_BASE}/api/sync/${encodeURIComponent(pluginName)}?token=${encodeURIComponent(token)}`);
     if (!res?.ok) throw new Error("Failed to load plugin config");
     return res.data;
 }
 
 export async function saveOwnPluginConfig(pluginName: string, token: string, settings: Record<string, unknown>) {
+    if (CLOUD_DISABLED) throw new Error("LumenCord cloud sync is not available");
     // private must be sent both at top-level and inside settings so the server
     // always treats this config as public (visible via /public endpoint).
     const isPrivate = settings.private === true ? true : false;
@@ -48,7 +54,7 @@ const VIRTUAL_USER_IDS = new Set([
 
 // No in-memory cache here — caching is handled by callers (e.g. publicProfilesCache in customProfile)
 export async function getPublicPluginConfig(pluginName: string, userId: string) {
-    if (!userId || VIRTUAL_USER_IDS.has(userId)) return null;
+    if (CLOUD_DISABLED || !userId || VIRTUAL_USER_IDS.has(userId)) return null;
     try {
         const nativeFetch = (window as any).VencordNative?.pluginHelpers?.MultiInstance?.fetchPublicConfig;
         if (nativeFetch) {

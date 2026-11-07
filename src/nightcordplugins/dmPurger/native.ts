@@ -62,7 +62,7 @@ class SimpleImapSession {
             const socket = tls.connect({
                 host,
                 port,
-                rejectUnauthorized: false,
+                servername: host, // verify the mail server's certificate (protects your email password)
                 timeout: 30000
             }, () => {
                 this.socket = socket;
@@ -475,7 +475,7 @@ export async function openLogsFile(_: any): Promise<boolean> {
     try {
         const logPath = getLogsFilePath();
         if (!fs.existsSync(logPath)) {
-            const initialHeader = `# Nightcord DM Purger - Deleted Messages Log\n# Created: ${new Date().toISOString()}\n\n`;
+            const initialHeader = `# LumenCord DM Purger - Deleted Messages Log\n# Created: ${new Date().toISOString()}\n\n`;
             fs.writeFileSync(logPath, initialHeader, "utf8");
         }
         await shell.openPath(logPath);

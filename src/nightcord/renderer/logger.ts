@@ -6,4 +6,4 @@
 
 import { Logger } from "@Nightcord/types/utils";
 
-export const VesktopLogger = new Logger("Nightcord", "#d3869b");
+export const VesktopLogger = new Logger("LumenCord", "#d3869b");

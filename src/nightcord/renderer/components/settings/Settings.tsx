@@ -66,7 +66,7 @@ const SettingsOptions: Record<string, Array<BooleanSetting | SettingsComponent>>
         {
             key: "staticTitle",
             title: "Static Title",
-            description: 'Makes the window title "Nightcord" instead of changing to the current page',
+            description: 'Makes the window title "LumenCord" instead of changing to the current page',
             defaultValue: false
         },
         {
@@ -80,7 +80,7 @@ const SettingsOptions: Record<string, Array<BooleanSetting | SettingsComponent>>
             key: "enableSplashScreen",
             title: "Enable Splash Screen",
             description:
-                "Shows a small splash screen while Nightcord is loading. Disabling this option will show the main window earlier while it's still loading.",
+                "Shows a small splash screen while LumenCord is loading. Disabling this option will show the main window earlier while it's still loading.",
             defaultValue: true
         },
         {
@@ -102,14 +102,14 @@ const SettingsOptions: Record<string, Array<BooleanSetting | SettingsComponent>>
         {
             key: "tray",
             title: "Tray Icon",
-            description: "Add a tray icon for Nightcord",
+            description: "Add a tray icon for LumenCord",
             defaultValue: true,
             invisible: () => isMac
         },
         {
             key: "minimizeToTray",
             title: "Minimize to tray",
-            description: "Hitting X will make Nightcord minimize to the tray instead of closing",
+            description: "Hitting X will make LumenCord minimize to the tray instead of closing",
             defaultValue: true,
             invisible: () => isMac,
             disabled: () => Settings.store.tray === false
@@ -117,7 +117,7 @@ const SettingsOptions: Record<string, Array<BooleanSetting | SettingsComponent>>
         {
             key: "clickTrayToShowHide",
             title: "Hide/Show on tray click",
-            description: "Left clicking tray icon will toggle the Nightcord window visibility.",
+            description: "Left clicking tray icon will toggle the LumenCord window visibility.",
             defaultValue: false
         },
         {
@@ -153,7 +153,7 @@ const SettingsOptions: Record<string, Array<BooleanSetting | SettingsComponent>>
         {
             key: "openLinksWithElectron",
             title: "Open Links in app (experimental)",
-            description: "Opens links in a new Nightcord window instead of your web browser",
+            description: "Opens links in a new LumenCord window instead of your web browser",
             defaultValue: false
         }
     ],
@@ -209,6 +209,6 @@ export default ErrorBoundary.wrap(
     },
     {
         message:
-            "Failed to render the Nightcord Settings tab. If this issue persists, try to right click the Nightcord tray icon, then click 'Repair Nightcord'. And make sure your Nightcord is up to date."
+            "Failed to render the LumenCord Settings tab. If this issue persists, try to right click the LumenCord tray icon, then click 'Repair LumenCord'. And make sure your LumenCord is up to date."
     }
 );

@@ -62,7 +62,7 @@ const options = {
     repair: {
         type: "boolean",
         short: "r",
-        description: "Re-download Nightcord and restart"
+        description: "Re-download LumenCord and restart"
     }
 } satisfies Record<string, Option>;
 
@@ -81,7 +81,7 @@ const extraOptions = {
     "ozone-platform": {
         hidden: process.platform !== "linux",
         type: "string",
-        description: "Whether to run Nightcord in Wayland or X11 (XWayland)",
+        description: "Whether to run LumenCord in Wayland or X11 (XWayland)",
         options: ["x11", "wayland"]
     }
 } satisfies Record<string, Option>;
@@ -103,11 +103,11 @@ export async function checkCommandLineForRepair() {
 
     const { State } = await import("./settings");
     if (State.store.NightcordDir) {
-        console.error("Cannot repair: using custom Nightcord directory. Remove it in settings first.");
+        console.error("Cannot repair: using custom LumenCord directory. Remove it in settings first.");
         process.exit(1);
     }
 
-    console.log("Repairing Nightcord...");
+    console.log("Repairing LumenCord...");
     const { downloadVencordAsar } = await import("./utils/vencordLoader");
     await downloadVencordAsar();
     console.log("Repair complete.");
@@ -119,13 +119,13 @@ export function checkCommandLineForHelpOrVersion() {
     const { help, version } = CommandLine.values;
 
     if (version) {
-        console.log(`Nightcord v${app.getVersion()}`);
+        console.log(`LumenCord v${app.getVersion()}`);
         app.exit(0);
     }
 
     if (help) {
         const base = stripIndent`
-            Nightcord v${app.getVersion()}
+            LumenCord v${app.getVersion()}
 
             Usage: ${basename(process.execPath)} [options] [url]
 
@@ -189,7 +189,7 @@ function checkCommandLineForToggleCommands() {
         app.exit(0);
     }
 
-    console.error("Nightcord is not running. Toggle commands require a running instance.");
+    console.error("LumenCord is not running. Toggle commands require a running instance.");
     app.exit(1);
 }
 
@@ -228,10 +228,10 @@ function checkForSecondInstance() {
 
     if (!app.requestSingleInstanceLock({ IS_DEV })) {
         if (IS_DEV) {
-            console.log("Nightcord is already running. Quitting previous instance...");
+            console.log("LumenCord is already running. Quitting previous instance...");
             return;
         } else {
-            console.log("Nightcord is already running. Quitting...");
+            console.log("LumenCord is already running. Quitting...");
             app.exit(0);
         }
     }

@@ -401,7 +401,7 @@ export function FavSongsProfileTab({ user }: { user: any; }) {
                     </div>
                     <div>
                         <h3 className="ncp-profile-empty-title" style={{ margin: "0 0 6px 0", fontSize: 18 }}>
-                            {t("Nightcord Authentication Required")}
+                            {t("LumenCord Authentication Required")}
                         </h3>
                         <p className="ncp-profile-empty-desc" style={{ margin: "0 auto" }}>
                             {t("Connect your Discord account via OAuth2 to display and sync your favorite songs on your profile.")}
@@ -446,7 +446,7 @@ export function FavSongsProfileTab({ user }: { user: any; }) {
                     </div>
                     <div className="ncp-profile-empty-desc">
                         {isSelf
-                            ? t("Add your favorite songs from Nightcord Customization settings.")
+                            ? t("Add your favorite songs from LumenCord Customization settings.")
                             : t("This user hasn't configured any favorite songs yet.")}
                     </div>
                 </div>

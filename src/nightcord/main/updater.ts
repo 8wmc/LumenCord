@@ -79,7 +79,7 @@ function openUpdater(update: UpdateInfo) {
     ipcMain.removeHandler(UpdaterIpcEvents.IGNORE_UPDATE);
 
     updaterWindow = new BrowserWindow({
-        title: "Nightcord Updater",
+        title: "LumenCord Updater",
         autoHideMenuBar: true,
         ...(process.platform === "win32"
             ? { icon: join(STATIC_DIR, "icon.ico") }

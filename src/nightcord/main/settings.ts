@@ -51,7 +51,7 @@ function loadSettings<T extends object = any>(file: string, name: string) {
     return store;
 }
 
-export const Settings = loadSettings<TSettings>(SETTINGS_FILE, "Nightcord settings");
+export const Settings = loadSettings<TSettings>(SETTINGS_FILE, "LumenCord settings");
 export const VencordSettings = loadSettings<any>(VENCORD_SETTINGS_FILE, "Vencord settings");
-export const State = loadSettings<TState>(STATE_FILE, "Nightcord state");
+export const State = loadSettings<TState>(STATE_FILE, "LumenCord state");
 

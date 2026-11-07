@@ -19,7 +19,6 @@ import { changes, checkForUpdates, rebuild, update, UpdateLogger } from "@utils/
 import { React, useState } from "@webpack/common";
 import { Toasts } from "@webpack/common";
 import { t } from "@api/i18n";
-import {domain} from "../../../../../DOMAIN.json";
 
 // Version locale depuis package.json (injectée au build)
 declare const VERSION: string;
@@ -91,9 +90,9 @@ function UpdaterTab() {
 
     return (
         <SettingsTab>
-            <Heading className={Margins.top16}>{t("Nightcord Updater")}</Heading>
+            <Heading className={Margins.top16}>{t("LumenCord Updater")}</Heading>
             <Paragraph className={Margins.bottom20}>
-                {t("Check for new versions of Nightcord. Updates can be installed automatically.")}
+                {t("Check for new versions of LumenCord. Updates can be installed automatically.")}
             </Paragraph>
 
             {/* Version actuelle */}
@@ -108,10 +107,10 @@ function UpdaterTab() {
                         </div>
                     </div>
                     <div>
-                        <Span size="sm" color="text-subtle">{t("Website")}</Span>
+                        <Span size="sm" color="text-subtle">{t("Source code")}</Span>
                         <div>
-                            <Link href={`https://${domain}`} style={{ fontSize: 13 }}>
-                                {domain}
+                            <Link href="https://github.com/8wmc/LumenCord" style={{ fontSize: 13 }}>
+                                github.com/8wmc/LumenCord
                             </Link>
                         </div>
                     </div>

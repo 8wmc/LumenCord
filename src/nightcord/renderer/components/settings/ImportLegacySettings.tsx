@@ -64,7 +64,7 @@ export function ImportLegacySettingsButton({ settings }: { settings: any; }) {
             const sourceLabel =
                 source === "equicord" ? "Equicord" :
                 source === "vencord" ? "Vencord" :
-                source === "nightcord" ? "Nightcord" : "inconnu";
+                source === "nightcord" ? "LumenCord" : "inconnu";
 
             const cleaned = cleanForNightcord(json);
 
@@ -76,7 +76,7 @@ export function ImportLegacySettingsButton({ settings }: { settings: any; }) {
             }
 
             setStatus("success");
-            setMessage(`✅ Settings ${sourceLabel} importés avec succès ! Redémarre Nightcord pour appliquer.`);
+            setMessage(`✅ Settings ${sourceLabel} importés avec succès ! Redémarre LumenCord pour appliquer.`);
         } catch (err: any) {
             setStatus("error");
             setMessage(`❌ Erreur : ${err?.message ?? String(err)}`);
@@ -102,8 +102,8 @@ export function ImportLegacySettingsButton({ settings }: { settings: any; }) {
             </BaseText>
 
             <BaseText size="sm" style={{ marginBottom: "12px", opacity: 0.7 }}>
-                Drag & drop your Equicord or Vencord backup JSON file here to import your settings into Nightcord.
-                Plugin-specific settings that don't exist in Nightcord will be automatically removed.
+                Drag & drop your Equicord or Vencord backup JSON file here to import your settings into LumenCord.
+                Plugin-specific settings that don't exist in LumenCord will be automatically removed.
             </BaseText>
 
             <div

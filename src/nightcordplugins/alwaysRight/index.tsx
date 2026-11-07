@@ -20,7 +20,7 @@ export const settings = definePluginSettings({
         type: OptionType.SELECT,
         description: "AI Provider & API Key to use",
         options: [
-            { label: "Nightcord AI (Shared Groq Key)", value: "nightcord", default: true },
+            { label: "LumenCord AI (Shared Groq Key)", value: "nightcord", default: true },
             { label: "Google Gemini AI (Direct Gemini Key)", value: "gemini" },
         ],
         default: "nightcord",
@@ -105,7 +105,7 @@ export const settings = definePluginSettings({
     },
     customApiKey: {
         type: OptionType.STRING,
-        description: "Optional custom Groq API key override (leave empty to use Nightcord AI key)",
+        description: "Optional custom Groq API key override (leave empty to use LumenCord AI key)",
         default: "",
     },
     showChatBarButton: {

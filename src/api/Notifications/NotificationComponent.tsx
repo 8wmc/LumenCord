@@ -19,7 +19,7 @@ export function NightcordLogoIcon(props: any) {
         <img
             className="nc-notif-custom-icon"
             src={NIGHTCORD_IMAGE_ICON}
-            alt="Nightcord"
+            alt="LumenCord"
             width={props?.width ?? 22}
             height={props?.height ?? 22}
             style={{

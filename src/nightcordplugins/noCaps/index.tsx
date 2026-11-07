@@ -189,7 +189,7 @@ export function convertNoCaps(text: string): string {
 export default definePlugin({
     name: "NoCaps",
     description: "Automatically converts messages containing 60%+ uppercase letters into lowercase before sending.",
-    authors: [{ name: "Nightcord", id: 0n }],
+    authors: [{ name: "LumenCord", id: 0n }],
     settings,
 
     chatBarButton: {

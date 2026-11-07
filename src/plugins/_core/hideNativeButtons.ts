@@ -12,7 +12,7 @@ const ALWAYS_HIDE_STYLE_ID = "nightcord-always-hide-native-buttons";
 const INBOX_HIDE_STYLE_ID = "nightcord-hide-inbox-button";
 
 const ALWAYS_HIDE_CSS = `
-/* ── Nightcord : suppression permanente des boutons natifs superflus ── */
+/* ── LumenCord : suppression permanente des boutons natifs superflus ── */
 [aria-label="Open Logs"],
 [aria-label="Help"],
 [aria-label="Aide"],
@@ -42,7 +42,7 @@ div[role="button"][aria-label="DevTools"] {
 `;
 
 const INBOX_HIDE_CSS = `
-/* ── Nightcord : masquage optionnel du bouton Boîte de réception / Inbox ── */
+/* ── LumenCord : masquage optionnel du bouton Boîte de réception / Inbox ── */
 [aria-label="Inbox"],
 [aria-label="Boîte de réception"],
 [aria-label="Bandeja de entrada"],

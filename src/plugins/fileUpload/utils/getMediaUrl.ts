@@ -522,7 +522,7 @@ export async function saveMediaFile(rawUrl: string, suggestedFilename?: string, 
 
         Toasts.show(Toasts.create(t(isVideo ? "Video saved successfully!" : "Image saved successfully!"), Toasts.Type.SUCCESS));
     } catch (e) {
-        console.error("[Nightcord] Failed to save media:", e);
+        console.error("[LumenCord] Failed to save media:", e);
         Toasts.show(Toasts.create(t(isVideo ? "Failed to save video" : "Failed to save image"), Toasts.Type.FAILURE));
     }
 }
@@ -541,7 +541,7 @@ export async function copyMediaImage(rawUrl: string): Promise<void> {
         }
         Toasts.show(Toasts.create(t("Image copied to clipboard!"), Toasts.Type.SUCCESS));
     } catch (e) {
-        console.error("[Nightcord] Failed to copy image:", e);
+        console.error("[LumenCord] Failed to copy image:", e);
         Toasts.show(Toasts.create(t("Failed to copy image"), Toasts.Type.FAILURE));
     }
 }

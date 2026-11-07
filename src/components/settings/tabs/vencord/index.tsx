@@ -60,13 +60,13 @@ function useDiscordUser(userId: string) {
         })
             .then(r => r.json())
             .then(u => setUser({
-                name: u.global_name || u.username || "Nightcord",
+                name: u.global_name || u.username || "LumenCord",
                 username: u.username ? `@${u.username}` : "",
                 pfp: u.avatar
                     ? `https://cdn.discordapp.com/avatars/${userId}/${u.avatar}.webp?size=128`
                     : `https://cdn.discordapp.com/embed/avatars/${Number(BigInt(userId) >> 22n) % 6}.png`
             }))
-            .catch(() => setUser({ name: "Nightcord", username: "", pfp: `https://cdn.discordapp.com/embed/avatars/0.png` }));
+            .catch(() => setUser({ name: "LumenCord", username: "", pfp: `https://cdn.discordapp.com/embed/avatars/0.png` }));
     }, [userId]);
     return user;
 }
@@ -160,8 +160,8 @@ function StealthModeSection() {
             <Heading className={Margins.top20}>{t("Stealth Mode")}</Heading>
             <Paragraph className={Margins.bottom16}>
                 {enabled
-                    ? "Stealth mode is enabled â€” all Nightcord visual elements are hidden. Shortcut: Ctrl+Shift+H"
-                    : t("Hides all Nightcord visual elements without disabling plugins. Shortcut: Ctrl+Shift+H")}
+                    ? "Stealth mode is enabled — all LumenCord visual elements are hidden. Shortcut: Ctrl+Shift+H"
+                    : t("Hides all LumenCord visual elements without disabling plugins. Shortcut: Ctrl+Shift+H")}
             </Paragraph>
             <Button
                 onClick={toggleStealthMode}
@@ -356,14 +356,14 @@ function EquicordSettings() {
             !IS_WEB && {
                 key: "disableAutoUpdate",
                 title: t("Disable Automatic Updates"),
-                description: t("Prevent Nightcord from automatically checking, downloading, or prompting for updates on startup. You can still update manually in the \"Updater\" settings tab."),
+                description: t("Prevent LumenCord from automatically checking, downloading, or prompting for updates on startup. You can still update manually in the \"Updater\" settings tab."),
                 restartRequired: false,
                 warning: { enabled: false },
             },
             {
                 key: "enableInAppNotifications",
-                title: t("Enable Nightcord In-App Notifications"),
-                description: t("Show custom toast notifications in the top-right corner for updates, shortcuts (Stealth Mode, StreamProof), and status changes. Disable to silence all Nightcord notifications."),
+                title: t("Enable LumenCord In-App Notifications"),
+                description: t("Show custom toast notifications in the top-right corner for updates, shortcuts (Stealth Mode, StreamProof), and status changes. Disable to silence all LumenCord notifications."),
                 restartRequired: false,
                 warning: { enabled: false },
             },
@@ -394,7 +394,7 @@ function EquicordSettings() {
 
                 <Heading className={Margins.top20}>{t("Client Settings")}</Heading>
                 <Paragraph className={Margins.bottom16}>
-                    {t("Configure how Nightcord behaves and integrates with Discord. These settings affect the Discord client's appearance and behavior.")}
+                    {t("Configure how LumenCord behaves and integrates with Discord. These settings affect the Discord client's appearance and behavior.")}
                 </Paragraph>
                 <Notice.Info className={Margins.bottom20} style={{ width: "100%" }}>
                     {t("You can customize where this settings section appears in Discord's settings menu by configuring the")} {" "}
@@ -520,7 +520,7 @@ function EquicordSettings() {
 
                 <Heading className={Margins.top20}>{t("Notifications")}</Heading>
                 <Paragraph className={Margins.bottom16}>
-                    {t("Configure how Nightcord handles notifications. You can customize when and how you receive alerts, or view a history of past notifications.")}
+                    {t("Configure how LumenCord handles notifications. You can customize when and how you receive alerts, or view a history of past notifications.")}
                 </Paragraph>
 
                 <Flex gap="16px">
@@ -538,7 +538,7 @@ function EquicordSettings() {
 
             <Heading className={Margins.top20}>{t("Compact Mode")}</Heading>
             <Paragraph className={Margins.bottom16}>
-                {t("Replaces all Nightcord buttons with a single compact toggle icon. Click the icon in the header bar, channel toolbar, or chat bar to restore all buttons.")}
+                {t("Replaces all LumenCord buttons with a single compact toggle icon. Click the icon in the header bar, channel toolbar, or chat bar to restore all buttons.")}
             </Paragraph>
             <Button
                 onClick={toggleCompactMode}
@@ -550,7 +550,7 @@ function EquicordSettings() {
 
             <Heading className={Margins.top20}>{t("Stealth Mode")}</Heading>
             <Paragraph className={Margins.bottom16}>
-                {t("Hides all Nightcord visual elements without disabling plugins. Shortcut: Ctrl+Shift+H")}
+                {t("Hides all LumenCord visual elements without disabling plugins. Shortcut: Ctrl+Shift+H")}
             </Paragraph>
             <StealthModeButton />
 
@@ -559,7 +559,7 @@ function EquicordSettings() {
 }
 
 
-export default wrapTab(EquicordSettings, "Nightcord Settings");
+export default wrapTab(EquicordSettings, "LumenCord Settings");
 
 
 

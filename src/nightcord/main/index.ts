@@ -10,10 +10,10 @@ if (CommandLine.values.repair) {
     (async () => {
         const { State } = await import("./settings");
         if (State.store.NightcordDir) {
-            console.error("Cannot repair: using custom Nightcord directory.");
+            console.error("Cannot repair: using custom LumenCord directory.");
             process.exit(1);
         }
-        console.log("Repairing Nightcord...");
+        console.log("Repairing LumenCord...");
         const { downloadVencordAsar } = await import("./utils/vencordLoader");
         await downloadVencordAsar();
         console.log("Repair complete.");

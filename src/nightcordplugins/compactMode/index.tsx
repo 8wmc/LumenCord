@@ -19,7 +19,7 @@ export default definePlugin({
 
     name: "CompactMode",
     enabledByDefault: true,
-    description: "Hides all Nightcord plugin buttons and replaces them with a single compact toggle icon. Click the icon to restore all buttons.",
+    description: "Hides all LumenCord plugin buttons and replaces them with a single compact toggle icon. Click the icon to restore all buttons.",
     authors: [{ name: "Nightcord",
      id: 0n }],
     required: true,

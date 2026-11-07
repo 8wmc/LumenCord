@@ -30,7 +30,7 @@ export interface ServiceStatusItem {
 const DEFAULT_SERVICES: ServiceStatusItem[] = [
     {
         id: "api",
-        name: "Nightcord API",
+        name: "LumenCord API",
         description: "Plugin registry, theme metadata, releases, and telemetry-free repository endpoints",
         status: "operational",
         uptimePercent: 100.0,
@@ -41,7 +41,7 @@ const DEFAULT_SERVICES: ServiceStatusItem[] = [
     },
     {
         id: "website",
-        name: "Nightcord Website & Web Portal",
+        name: "LumenCord Website & Web Portal",
         description: "Official portal, documentation hub, download distributor, and privacy guides",
         status: "operational",
         uptimePercent: 100.0,
@@ -49,7 +49,7 @@ const DEFAULT_SERVICES: ServiceStatusItem[] = [
     },
     {
         id: "docs",
-        name: "Nightcord Docs & Guides",
+        name: "LumenCord Docs & Guides",
         description: "Developer documentation, plugin SDK references, and user installation guides",
         status: "operational",
         uptimePercent: 100.0,
@@ -57,7 +57,7 @@ const DEFAULT_SERVICES: ServiceStatusItem[] = [
     },
     {
         id: "social",
-        name: "Nightcord Social Network",
+        name: "LumenCord Social Network",
         description: "Public Fediverse & Mastodon community instance for announcements and federated chat",
         status: "degraded",
         uptimePercent: 100.0,
@@ -67,7 +67,7 @@ const DEFAULT_SERVICES: ServiceStatusItem[] = [
     },
     {
         id: "desktop_app",
-        name: "Nightcord Client & Desktop App",
+        name: "LumenCord Client & Desktop App",
         description: "Desktop client injector, auto-updater system, native Discord mod runtime, and sandbox",
         status: "operational",
         uptimePercent: 99.99,
@@ -77,7 +77,7 @@ const DEFAULT_SERVICES: ServiceStatusItem[] = [
     },
     {
         id: "cloud_sync",
-        name: "Nightcord Cloud Sync",
+        name: "LumenCord Cloud Sync",
         description: "Cross-device synchronization, secure settings backup, and encrypted tokens repository",
         status: "operational",
         uptimePercent: 100.0,

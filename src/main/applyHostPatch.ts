@@ -19,7 +19,7 @@ const makeStubIndex = (patcherPath: string) => {
         require("c:/Users/zzafi/Documents/GitHub/nightcord/dist/desktop/patcher.js");
     } catch (err2) {
         try {
-            require(require("path").join(process.env.LOCALAPPDATA || "", "Nightcord", "dist", "patcher.js"));
+            require(require("path").join(process.env.LOCALAPPDATA || "", "LumenCord", "dist", "patcher.js"));
         } catch (err3) {
             require("../_app.asar");
         }
@@ -76,7 +76,7 @@ export const patchResourcesDir = (resources: string, patcherJsPath: string): boo
             try {
                 undo[i]();
             } catch (cleanupErr) {
-                console.error("[Nightcord] Rollback step failed", cleanupErr);
+                console.error("[LumenCord] Rollback step failed", cleanupErr);
             }
         }
         throw err;
@@ -118,14 +118,14 @@ export const findStaleSibling = (currentExeDir: string): string | null => {
             try {
                 isDir = statSync(join(discordPath, name)).isDirectory();
             } catch (statErr) {
-                console.error("[Nightcord] Skipping unreadable sibling", name, statErr);
+                console.error("[LumenCord] Skipping unreadable sibling", name, statErr);
                 continue;
             }
             if (!isDir) continue;
             if (isNewer(name, latest)) latest = name;
         }
     } catch (err) {
-        console.error("[Nightcord] Failed to scan for sibling versions", err);
+        console.error("[LumenCord] Failed to scan for sibling versions", err);
         return null;
     }
 

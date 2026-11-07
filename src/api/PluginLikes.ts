@@ -20,7 +20,8 @@ let cacheTime = 0;
 const CACHE_TTL = 60_000; // 1 minute
 
 // Circuit breaker: if the API is unreachable (CORS/network), skip all subsequent calls this session
-let networkBlocked = false;
+// LumenCord: no ratings server exists, so never call out.
+let networkBlocked = true;
 
 /** Route a request through Electron main process to bypass CORS. */
 async function netFetch(url: string, opts?: { method?: string; headers?: Record<string, string>; body?: string; }) {
@@ -66,6 +67,7 @@ export async function fetchPluginRatings(forceRefresh = false): Promise<PluginRa
  * Returns updated like data, or null on failure.
  */
 export async function togglePluginLike(pluginName: string): Promise<PluginLikeData | null> {
+    if (networkBlocked) return null;
     const token = await getStoredToken();
     if (!token) return null;
 

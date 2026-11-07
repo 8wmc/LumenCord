@@ -39,7 +39,7 @@ export async function authorizeLikeSystem(): Promise<string | null> {
     } catch (e) {
         console.error("[PluginLikes] Failed to start OAuth flow:", e);
         showNotification({
-            title: "Nightcord",
+            title: "LumenCord",
             body: "Failed to start the login flow. Please try again."
         });
         return null;
@@ -69,13 +69,13 @@ export async function authorizeLikeSystem(): Promise<string | null> {
                             await storeToken(data.token);
                             notifyAuthChanged();
                             showNotification({
-                                title: "Nightcord",
+                                title: "LumenCord",
                                 body: "Successfully logged in! You can now like plugins."
                             });
                             resolve(data.token);
                         } else {
                             showNotification({
-                                title: "Nightcord",
+                                title: "LumenCord",
                                 body: "Login failed, no token returned."
                             });
                             resolve(null);
@@ -83,7 +83,7 @@ export async function authorizeLikeSystem(): Promise<string | null> {
                     } catch (e) {
                         console.error("[PluginLikes] Failed to complete OAuth flow:", e);
                         showNotification({
-                            title: "Nightcord",
+                            title: "LumenCord",
                             body: "Login failed, check console."
                         });
                         resolve(null);

@@ -86,9 +86,9 @@ export function SecurityModal(props: ModalProps) {
                             <strong>Support &amp; Community:</strong>{" "}
                             <span
                                 style={{ color: "var(--text-link)", cursor: "pointer" }}
-                                onClick={() => VencordNative.native.openExternal("https://discord.gg/nightcord")}
+                                onClick={() => VencordNative.native.openExternal("https://github.com/8wmc/LumenCord/issues")}
                             >
-                                discord.gg/nightcord
+                                github.com/8wmc/LumenCord/issues
                             </span>
                         </li>
                     </ul>

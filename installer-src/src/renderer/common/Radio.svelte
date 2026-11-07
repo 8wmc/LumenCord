@@ -19,8 +19,9 @@
     .radio-item {
         display: flex;
         align-items: center;
-        border-radius: 3px;
+        border-radius: 10px;
         background-color: var(--bg3);
+        border: 1px solid var(--surface-border);
         padding: 12px;
         color: var(--text-normal);
         font-weight: 500;
@@ -48,6 +49,7 @@
 
     .radio-item:hover {
         color: var(--text-light);
+        border-color: var(--surface-border-strong);
     }
 
     :global(.radio-item svg) {
@@ -58,5 +60,7 @@
 
     .radio-container input:checked + .radio-item {
         color: #fff;
+        background-color: transparent;
+        border-color: rgba(255, 255, 255, 0.18);
     }
 </style>

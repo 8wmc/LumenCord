@@ -402,7 +402,7 @@ interface FakeConnection {
 }
 
 const FAKE_PLATFORMS = [
-    { id: "domain", label: "Domain / Site Web", icon: "/assets/b4376756bcbbf1ef.svg", placeholder: "nightcord.st", defaultUrl: (name: string) => name.startsWith("http") ? name : `https://${name}` },
+    { id: "domain", label: "Domain / Site Web", icon: "/assets/b4376756bcbbf1ef.svg", placeholder: "example.com", defaultUrl: (name: string) => name.startsWith("http") ? name : `https://${name}` },
     { id: "twitter", label: "X (Twitter)", icon: "/assets/a61999ae9bfb9658.svg", placeholder: "nightcord", defaultUrl: (name: string) => `https://x.com/${name.replace(/^@/, "")}` },
     { id: "github", label: "GitHub", icon: "/assets/a35ff3e86ffa1eb2.svg", placeholder: "nightcord", defaultUrl: (name: string) => `https://github.com/${name}` },
     { id: "youtube", label: "YouTube", icon: "/assets/0fa530ba9c04ac32.svg", placeholder: "nightcord", defaultUrl: (name: string) => `https://youtube.com/@${name.replace(/^@/, "")}` },
@@ -411,19 +411,19 @@ const FAKE_PLATFORMS = [
     { id: "tiktok", label: "TikTok", icon: "/assets/b4376756bcbbf1ef.svg", placeholder: "nightcord", defaultUrl: (name: string) => name.startsWith("http") ? name : name.includes("tiktok.com") ? `https://${name.replace(/^https?:\/\//, "")}` : `https://tiktok.com/@${name.replace(/^@/, "")}` },
     { id: "reddit", label: "Reddit", icon: "/assets/adfd927dcc2049a5.svg", placeholder: "nightcord", defaultUrl: (name: string) => `https://reddit.com/user/${name}` },
     { id: "steam", label: "Steam", icon: "/assets/1f7ec18f3695d4cf.svg", placeholder: "nightcord", defaultUrl: (name: string) => `https://steamcommunity.com/id/${name}` },
-    { id: "leagueoflegends", label: "Riot Games", icon: "https://cdn.discordapp.com/app-icons/1443033465766281327/b69039088ad141a9c036f7f4f247f6ba.png?size=128", placeholder: "Nightcord#EUW" },
+    { id: "leagueoflegends", label: "Riot Games", icon: "https://cdn.discordapp.com/app-icons/1443033465766281327/b69039088ad141a9c036f7f4f247f6ba.png?size=128", placeholder: "LumenCord#EUW" },
     { id: "bluesky", label: "Bluesky", icon: "/assets/2709f058378a099d.svg", placeholder: "nightcord.bsky.social", defaultUrl: (name: string) => `https://bsky.app/profile/${name}` },
     { id: "paypal", label: "PayPal", icon: "/assets/dcb64a4ff8f61b2c.svg", placeholder: "nightcord", defaultUrl: (name: string) => `https://paypal.me/${name}` },
     { id: "ebay", label: "eBay", icon: "/assets/b28a7a265581b6e3.svg", placeholder: "nightcord" },
     { id: "crunchyroll", label: "Crunchyroll", icon: "/assets/94ef3e8b7fa85a2e.svg", placeholder: "nightcord" },
     { id: "playstation", label: "PlayStation Network", icon: "/assets/eed203a7ec517e23.svg", placeholder: "Nightcord_ID" },
-    { id: "xbox", label: "Xbox", icon: "/assets/c4f09fda61827e19.svg", placeholder: "Nightcord" },
+    { id: "xbox", label: "Xbox", icon: "/assets/c4f09fda61827e19.svg", placeholder: "LumenCord" },
     { id: "amazon-music", label: "Amazon Music", icon: "/assets/e3c4aacc1a54395d.svg", placeholder: "nightcord" },
-    { id: "battlenet", label: "Battle.net", icon: "/assets/163c8cb9220efc74.svg", placeholder: "Nightcord#1234" },
-    { id: "bungie", label: "Bungie.net", icon: "/assets/099cd81cf3b4cc98.svg", placeholder: "Nightcord#1234" },
-    { id: "epicgames", label: "Epic Games", icon: "/assets/199eceff4fca1a0c.svg", placeholder: "Nightcord" },
+    { id: "battlenet", label: "Battle.net", icon: "/assets/163c8cb9220efc74.svg", placeholder: "LumenCord#1234" },
+    { id: "bungie", label: "Bungie.net", icon: "/assets/099cd81cf3b4cc98.svg", placeholder: "LumenCord#1234" },
+    { id: "epicgames", label: "Epic Games", icon: "/assets/199eceff4fca1a0c.svg", placeholder: "LumenCord" },
     { id: "facebook", label: "Facebook", icon: "/assets/17be29f77bee4405.svg", placeholder: "nightcord", defaultUrl: (name: string) => `https://facebook.com/${name}` },
-    { id: "roblox", label: "Roblox", icon: "/assets/a4d8e9b0404a2d00.svg", placeholder: "Nightcord" }
+    { id: "roblox", label: "Roblox", icon: "/assets/a4d8e9b0404a2d00.svg", placeholder: "LumenCord" }
 ];
 
 function formatFakeConnections(fakeConns: FakeConnection[]) {
@@ -1663,7 +1663,7 @@ function ConnectionsPicker({ connections, onChange }: {
             }}>
                 <strong>{t("Profile Connections")}</strong>
                 <br />
-                {t("Add social links or custom domains (e.g. nightcord.st, X @tag, GitHub, Spotify, TikTok). These connections will appear directly on your Discord profile.")}
+                {t("Add social links or custom domains (e.g. example.com, X @tag, GitHub, Spotify, TikTok). These connections will appear directly on your Discord profile.")}
             </div>
 
             {/* List of active connections */}
@@ -1768,7 +1768,7 @@ function ConnectionsPicker({ connections, onChange }: {
                 {/* Form fields */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     <Field
-                        label={platform === "domain" ? t("Domain / Website Name (e.g. nightcord.st)") : t("Account Name / Username")}
+                        label={platform === "domain" ? t("Domain / Website Name (e.g. example.com)") : t("Account Name / Username")}
                         value={name}
                         placeholder={currentPlat.placeholder || "nightcord"}
                         onChange={setName}
@@ -2165,9 +2165,12 @@ function CustomProfileModal({ rootProps }: { rootProps: any; }) {
                     <div className="cp-settings-content">
                         {activeTab === 'general' && (
                             <>
+                                {/* LumenCord: profile sharing needs a cloud server, which LumenCord doesn't have. */}
+                                {false && (
+                                    <>
                                 <Toggle
                                     label={t("Share my Custom Profile")}
-                                    sublabel={t("Lets other Nightcord users see your Custom Profile, and lets you see theirs")}
+                                    sublabel={t("Lets other LumenCord users see your Custom Profile, and lets you see theirs")}
                                     checked={shareEnabled}
                                     onChange={toggleShareProfile}
                                 />
@@ -2181,9 +2184,11 @@ function CustomProfileModal({ rootProps }: { rootProps: any; }) {
                                         <line x1="12" y1="17" x2="12.01" y2="17" />
                                     </svg>
                                     <span style={{ color: "rgba(250, 166, 26, 0.9)", fontSize: 14, lineHeight: 1.5, fontWeight: 500 }}>
-                                        {t("This requires Discord authorization. Once enabled, everyone using Nightcord will be able to see your Custom Profile, and you will be able to see theirs.")}
+                                        {t("This requires Discord authorization. Once enabled, everyone using LumenCord will be able to see your Custom Profile, and you will be able to see theirs.")}
                                     </span>
                                 </div>
+                                    </>
+                                )}
                                 <Field label={t("Username")} value={data.username ?? ""} placeholder="my_username_00" onChange={v => set("username", v)} />
                                 <Field label={t("Display name")} value={data.globalName ?? ""} placeholder="My Name" onChange={v => set("globalName", v)} />
                                 <Field label={t("Bio")} value={data.bio ?? ""} placeholder={t("My description...")} onChange={v => set("bio", v)} />

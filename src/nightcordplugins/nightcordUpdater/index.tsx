@@ -61,9 +61,9 @@ async function checkForUpdates() {
             if (res.ok) data = await res.json();
         }
 
-        if (!data?.tag_name) return;
-
-        const remoteVersion: string = data.tag_name;
+        // The release tag is always "latest"; the real version (e.g. v1.32.7) is in the release title.
+        const remoteVersion: string = /v?\d+(\.\d+)+/.exec(data?.name ?? "")?.[0] ?? data?.tag_name ?? "";
+        if (!remoteVersion) return;
 
         if (isStrictlyNewer(remoteVersion, localVersion)) {
             pendingUpdate = { remoteVersion, localVersion };
@@ -150,7 +150,7 @@ function UpdateBanner() {
             style: { display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }
         },
             React.createElement("span", { style: { fontWeight: 700, flexShrink: 0 } },
-                `Nightcord ${info.remoteVersion} available!`
+                `LumenCord ${info.remoteVersion} available!`
             ),
             React.createElement("span", {
                 style: { opacity: 0.85, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }
@@ -229,7 +229,7 @@ export default definePlugin({
     name: "NightcordUpdater",
     enabledByDefault: true,
     required: true,
-    description: "Shows a banner when a new Nightcord version is available. Click Update to install.",
+    description: "Shows a banner when a new LumenCord version is available. Click Update to install.",
     authors: [{ name: "Nightcord",
      id: 0n }],
 
