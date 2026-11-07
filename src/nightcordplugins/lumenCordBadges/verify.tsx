@@ -9,6 +9,7 @@ import { OAuth2AuthorizeModal, showToast, Toasts, UserStore } from "@webpack/com
 
 import { finishVerify, logger, ping } from "./api";
 import { CLIENT_ID, REDIRECT_URI } from "./defs";
+import { settings } from "./settings";
 
 /**
  * Opens Discord's own "Authorize" popup. Discord confirms who you are and the
@@ -36,6 +37,9 @@ export function openVerifyModal(onDone?: (ok: boolean) => void) {
                 const me = UserStore.getCurrentUser();
 
                 if (auth && me && auth.id === me.id) {
+                    // Verifying is saying yes to badges
+                    settings.store.shareBadges = true;
+                    settings.store.pauseBadges = false;
                     await ping(me.id, me.username, (me as any).globalName || me.username);
                     showToast("Verified! Your LumenCord badges are on.", Toasts.Type.SUCCESS);
                     onDone?.(true);

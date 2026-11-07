@@ -8,15 +8,10 @@
     canGoForward.set(true);
     nextPage.set("/actions");
 
-    // Shows the version that is about to be installed (read from the latest release title).
-    let version = "";
-    fetch("https://api.github.com/repos/8wmc/LumenCord/releases/latest", {headers: {Accept: "application/vnd.github+json"}})
-        .then(r => r.ok ? r.json() : null)
-        .then(release => {
-            const match = release && /v?\d+(\.\d+)+/.exec(release.name || "");
-            if (match) version = match[0].startsWith("v") ? match[0] : `v${match[0]}`;
-        })
-        .catch(() => {});
+    // Same number as the title bar (set by the build), shown short: "V2"
+    const {remote} = require("electron");
+    const fullVersion = String(remote.app.getVersion() || "");
+    const version = fullVersion ? `V${fullVersion.split(".")[0]}` : "";
 </script>
 
 <section class="page" in:page out:page="{{out: true}}">
@@ -37,13 +32,8 @@
 
         <div class="version">
             <span class="label">Version</span>
-            <span class="value">{version || "Latest release"}</span>
+            <span class="value">{version || "V2"}</span>
         </div>
-
-        <p class="small">
-            Built on the open-source work of Vencord, Equicord and Nightcord.
-            Licensed under the GPL-3.0.
-        </p>
     </div>
 </section>
 
@@ -60,7 +50,7 @@
     }
 
     .card {
-        width: 340px;
+        width: 300px;
         max-width: 100%;
         height: auto;
         filter: drop-shadow(0 6px 22px rgba(124, 58, 237, 0.45));
@@ -110,10 +100,4 @@
         font-weight: 600;
     }
 
-    .small {
-        margin: 8px 0 0;
-        color: var(--text-muted);
-        font-size: 11px;
-        max-width: 380px;
-    }
 </style>

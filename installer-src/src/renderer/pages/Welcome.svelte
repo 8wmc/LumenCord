@@ -25,7 +25,6 @@
         <li><span class="dot"></span>The LumenCord theme built in (turn it off anytime)</li>
         <li><span class="dot"></span>LumenCord badges that level up the longer you use it</li>
     </ul>
-    <p class="hint">Click <b>Next</b> to get started.</p>
 </section>
 
 <style>
@@ -33,22 +32,23 @@
         align-items: center;
         justify-content: center;
         text-align: center;
-        gap: 6px;
+        gap: 4px;
+        padding-bottom: 6px;
     }
 
     .logo-wrap {
         position: relative;
-        width: 118px;
-        height: 118px;
-        margin-bottom: 8px;
+        width: 72px;
+        height: 72px;
+        margin-bottom: 4px;
     }
 
     .halo {
         position: absolute;
-        top: -22px;
-        right: -22px;
-        bottom: -22px;
-        left: -22px;
+        top: -14px;
+        right: -14px;
+        bottom: -14px;
+        left: -14px;
         border-radius: 50%;
         background: radial-gradient(circle, rgba(192, 132, 252, 0.45) 0%, rgba(124, 58, 237, 0.18) 45%, rgba(124, 58, 237, 0) 70%);
         animation: pulse 3.2s ease-in-out infinite;
@@ -56,16 +56,16 @@
 
     .logo {
         position: relative;
-        width: 118px;
-        height: 118px;
-        border-radius: 28px;
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
         filter: drop-shadow(0 0 14px rgba(168, 85, 247, 0.6));
         animation: float 5s ease-in-out infinite;
     }
 
     .title {
-        margin: 4px 0 0;
-        font-size: 26px;
+        margin: 2px 0 0;
+        font-size: 22px;
         font-weight: 700;
         color: var(--text-light);
         letter-spacing: 0.2px;
@@ -80,15 +80,15 @@
     }
 
     .tagline {
-        margin: 0 0 10px;
+        margin: 0 0 8px;
         color: var(--text-normal);
-        font-size: 14px;
+        font-size: 13px;
     }
 
     .points {
         list-style: none;
         margin: 0;
-        padding: 12px 18px;
+        padding: 9px 16px;
         text-align: left;
         border-radius: 10px;
         background: var(--bg3);
@@ -100,8 +100,8 @@
         align-items: center;
         gap: 10px;
         color: var(--text-normal);
-        font-size: 13px;
-        padding: 3px 0;
+        font-size: 12.5px;
+        padding: 2px 0;
     }
 
     .dot {
@@ -113,11 +113,6 @@
         box-shadow: var(--accent-glow);
     }
 
-    .hint {
-        margin: 12px 0 0;
-        color: var(--text-muted);
-        font-size: 12px;
-    }
 
     @keyframes pulse {
         0%, 100% { opacity: 0.65; transform: scale(0.96); }

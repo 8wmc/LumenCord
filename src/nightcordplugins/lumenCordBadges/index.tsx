@@ -6,24 +6,17 @@
 
 import { BadgePosition, BadgeUserArgs, ProfileBadge } from "@api/Badges";
 import * as DataStore from "@api/DataStore";
-import { showNotification } from "@api/Notifications";
-import { definePluginSettings } from "@api/Settings";
-import definePlugin, { OptionType } from "@utils/types";
-import { PresenceStore, SettingsRouter, UserStore } from "@webpack/common";
+import definePlugin from "@utils/types";
+import { PresenceStore, UserStore } from "@webpack/common";
 
 import { getAuth, getEntry, getManualBadges, isAuthFor, loadAuth, loadManualBadges, ping, prefetch, reportGame } from "./api";
+import { openFirstLaunchPopup } from "./FirstLaunch";
+import { isSharing, settings } from "./settings";
 import { formatAge, formatDuration, GAME_STAGES, iconFor, MANUAL_BADGES, MEMBER_STAGES, MINUTE, stageFor } from "./defs";
 
 export const BADGES_SETTINGS_KEY = "lumencord_badges";
-const PROMPTED_KEY = "LumenCordBadges_prompted";
-
-export const settings = definePluginSettings({
-    shareBadges: {
-        type: OptionType.BOOLEAN,
-        description: "Share my LumenCord stage and game badges (needs Verify with Discord)",
-        default: true,
-    },
-});
+// v2: everyone who isn't verified sees the new first-launch popup once
+const PROMPTED_KEY = "LumenCordBadges_prompted_v2";
 
 const BADGE_STYLE = { borderRadius: "50%" };
 const LAST_SESSION_STYLE = { borderRadius: "50%", opacity: 0.75, filter: "saturate(0.55)" };
@@ -108,7 +101,7 @@ function me() {
 
 function canReport() {
     const user = me();
-    return settings.store.shareBadges && !!user && isAuthFor(user.id);
+    return isSharing() && !!user && isAuthFor(user.id);
 }
 
 function currentGame(): string | null {
@@ -150,16 +143,12 @@ async function onConnected() {
         await ping(user.id, user.username, (user as any).globalName || user.username);
     }
 
-    // One-time friendly reminder to verify
-    if (!getAuth() && settings.store.shareBadges) {
+    // First launch: ask once whether they want badges (they can say no)
+    if (!getAuth()) {
         try {
             if (await DataStore.get(PROMPTED_KEY)) return;
             await DataStore.set(PROMPTED_KEY, true);
-            showNotification({
-                title: "LumenCord Badges",
-                body: "Verify with Discord to start earning LumenCord member and game badges. Click to open.",
-                onClick: () => SettingsRouter?.openUserSettings?.(`${BADGES_SETTINGS_KEY}_panel`),
-            });
+            openFirstLaunchPopup(() => resync());
         } catch { }
     }
 }

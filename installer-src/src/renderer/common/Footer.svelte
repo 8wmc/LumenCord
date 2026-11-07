@@ -22,8 +22,8 @@
 
     $: if ($location.startsWith("/setup/")) {
         const action = $location.slice(7);
-        const actionText = action[0].toUpperCase() + action.slice(1);
-        nextButtonContent = actionText;
+        const labels = {install: "Install", repair: "Repair", uninstall: "Uninstall", uninject_thirdparty: "Remove"};
+        nextButtonContent = labels[action] || (action[0].toUpperCase() + action.slice(1));
     }
     else {
         nextButtonContent = "Next";
