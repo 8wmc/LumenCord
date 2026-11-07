@@ -18,8 +18,8 @@ A few things were changed from upstream Nightcord before this was rebranded:
   (which work like passwords) in plain files, and GhostInstaller downloaded and ran programs from Nightcord's server.
 - **Removed:** every bit of code that silently talked to Nightcord's own servers: cloud sync, account linking,
   profile lookups, plugin likes, badges, tutorial videos, the status pinger and the runtime code downloader.
-  LumenCord talks to Discord, to this GitHub repo (updates, changelog, badges), and to outside services only
-  when you turn on a plugin that needs one.
+  LumenCord talks to Discord, to this GitHub repo (updates, changelog, badge list), to the LumenCord badge
+  server once you verify for badges, and to outside services only when you turn on a plugin that needs one.
 - **Fixed:** downloads and the DM Purger email login now check HTTPS certificates properly.
 - **Removed:** the build-time code scrambling (obfuscation), so the source stays readable.
 - **Removed:** hidden invisible-character watermarking that was in the original licence text.
@@ -39,19 +39,24 @@ notice the update on their own.
 
 ## LumenCord badges
 
-Edit `badges.json` in this repo to give people a badge on their profile (shown when "LumenCord Badges" is on in
-Settings → Synchronization). Example:
+Badges only LumenCord users can see. Everything about them is on **Settings → LumenCord Badges**.
 
-```json
-{
-  "123456789012345678": [
-    { "badge": "https://raw.githubusercontent.com/8wmc/LumenCord/main/assets/icon.png", "tooltip": "LumenCord Creator" }
-  ]
-}
-```
+- **Staff badges** (Owner, Developer, Admin, Helper, Donator) and **hand-out badges** (Friend, Met the Owner,
+  Met Staff, Trusted Member, Hot Dog Lover, Big Back, That One Kid, Meat Rider, Glazer, Lemon) are given out by
+  editing `badges.json` in this repo. Find an empty slot, paste the person's Discord user ID into `userId`, and put
+  badge IDs in `badges`, e.g. `["helper", "lemon"]`. `username` and `displayName` are optional labels for you.
+  The full badge list is at the bottom of the file. Save, then run `push-to-github.bat`; people see it within ~30 min.
+- **Member stages** (50 of them over the first year) and **game-session stages** (10 of them, 30 minutes up to
+  24 hours of one game) are automatic. They need the person to press **Verify with Discord** once.
+  The live game badge goes away when they stop playing, and a "Last session" badge stays until they start a
+  different game.
 
-The long number is the person's Discord user ID (Discord → Settings → Advanced → turn on Developer Mode, then
-right-click someone → Copy User ID).
+To get someone's user ID: Discord → Settings → Advanced → turn on Developer Mode, then right-click them → Copy User ID.
+
+**What LumenCord stores and why:** To give out badges, we store your Discord user ID, username, display name, the
+date you first opened LumenCord, and your current game session (game name and time played). This is only used to
+show badges. It's kept privately and never sold or shared. You can turn badges off in Settings anytime, and your
+data is deleted. (This lives in the LumenCord badge server on Cloudflare, never in this GitHub repo.)
 
 ## Building from source (Windows)
 

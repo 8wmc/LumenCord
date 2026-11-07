@@ -1,1 +1,565 @@
-{}
+{
+  "_howTo": [
+    "HOW TO GIVE SOMEONE A BADGE:",
+    "1. Find an empty slot below (userId is \"\").",
+    "2. Paste their Discord user ID into userId (right-click them > Copy User ID; turn on Developer Mode in Discord settings if you don't see it).",
+    "3. username and displayName are optional labels just for you. LumenCord ignores them.",
+    "4. Put badge IDs in the badges list, e.g. [\"helper\", \"lemon\"]. One person can have many badges. The full list is in _reference at the bottom.",
+    "5. Save, then run push-to-github.bat. Everyone sees the change within about 30 minutes.",
+    "Empty slots (userId \"\") are ignored, so leave as many as you like.",
+    "Member stages and game stages are automatic. Don't add them here."
+  ],
+  "people": [
+    {
+      "userId": "470592025394413597",
+      "username": "8wmc",
+      "displayName": "✞𝓢𝓿𝓪𝓰𝓮✞",
+      "badges": [
+        "owner",
+        "developer"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "developer"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "developer"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "developer"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "admin"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "admin"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "admin"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "helper"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "helper"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "helper"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "donator"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "donator"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "donator"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "friend"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "friend"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "friend"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "met_the_owner"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "met_the_owner"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "met_the_owner"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "met_staff"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "met_staff"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "met_staff"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "trusted_member"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "trusted_member"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "trusted_member"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "hot_dog_lover"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "hot_dog_lover"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "hot_dog_lover"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "big_back"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "big_back"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "big_back"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "that_one_kid"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "that_one_kid"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "that_one_kid"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "meat_rider"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "meat_rider"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "meat_rider"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "glazer"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "glazer"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "glazer"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "lemon"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "lemon"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": [
+        "lemon"
+      ]
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    },
+    {
+      "userId": "",
+      "username": "",
+      "displayName": "",
+      "badges": []
+    }
+  ],
+  "_reference": {
+    "_note": "Reference only. LumenCord ignores this whole section.",
+    "staffBadges": {
+      "owner": "Owner",
+      "developer": "Developer",
+      "admin": "Admin",
+      "helper": "Helper",
+      "donator": "Donator"
+    },
+    "handOutBadges": {
+      "friend": "Friend",
+      "met_the_owner": "Met the Owner",
+      "met_staff": "Met Staff",
+      "trusted_member": "Trusted Member",
+      "hot_dog_lover": "Hot Dog Lover",
+      "big_back": "Big Back",
+      "that_one_kid": "That One Kid",
+      "meat_rider": "Meat Rider",
+      "glazer": "Glazer",
+      "lemon": "Lemon"
+    },
+    "automaticMemberStages": {
+      "1. Spark": "Day 1",
+      "2. Ember": "1 day",
+      "3. Flicker": "2 days",
+      "4. Glint": "3 days",
+      "5. Kindle": "4 days",
+      "6. Twinkle": "5 days",
+      "7. Gleam": "6 days",
+      "8. Glow": "8 days",
+      "9. Shimmer": "10 days",
+      "10. Sparkle": "12 days",
+      "11. Beacon": "14 days",
+      "12. Lantern": "17 days",
+      "13. Shine": "20 days",
+      "14. Halo": "23 days",
+      "15. Prism": "26 days",
+      "16. Lumen": "30 days",
+      "17. Radiant": "38 days",
+      "18. Afterglow": "46 days",
+      "19. Moonbeam": "54 days",
+      "20. Starlit": "62 days",
+      "21. Dawnlight": "70 days",
+      "22. Aurora": "80 days",
+      "23. Nightglow": "90 days",
+      "24. Stardust": "100 days",
+      "25. Comet": "110 days",
+      "26. Meteor": "120 days",
+      "27. Starfall": "135 days",
+      "28. Lightbringer": "150 days",
+      "29. Starborn": "165 days",
+      "30. Celestial": "180 days",
+      "31. Moonlit": "190 days",
+      "32. Orbit": "200 days",
+      "33. Nebula": "210 days",
+      "34. Pulsar": "220 days",
+      "35. Quasar": "230 days",
+      "36. Galaxy": "240 days",
+      "37. Starforged": "250 days",
+      "38. Solar Flare": "260 days",
+      "39. Eclipse": "270 days",
+      "40. Zenith": "280 days",
+      "41. Astral": "290 days",
+      "42. Cosmic": "300 days",
+      "43. Luminary": "310 days",
+      "44. Starkeeper": "320 days",
+      "45. Supernova": "330 days",
+      "46. Constellation": "340 days",
+      "47. Infinity": "350 days",
+      "48. Ethereal": "357 days",
+      "49. Eternal Light": "362 days",
+      "50. Lumen Legend": "365 days"
+    },
+    "automaticGameStages": {
+      "1. Warming Up": "30 minutes",
+      "2. Getting Into It": "1 hour",
+      "3. Locked In": "2 hours",
+      "4. In the Zone": "3 hours",
+      "5. Grinding": "4 hours",
+      "6. Dedicated": "6 hours",
+      "7. No Breaks": "8 hours",
+      "8. No Sleep": "12 hours",
+      "9. Unstoppable": "18 hours",
+      "10. Marathon Legend": "24 hours"
+    }
+  }
+}

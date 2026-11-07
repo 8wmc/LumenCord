@@ -52,6 +52,7 @@ import type { ComponentType, Ref, SyntheticEvent } from "react";
 import type { UserstyleHeader } from "usercss-meta";
 
 import Plugins from "~plugins";
+import { settings as lumenCordThemeSettings, setLumenCordThemeEnabled } from "@nightcordplugins/lumenCordTheme";
 
 const PinIcon = findComponentByCodeLazy("1-.06-.63L6.16");
 const HomeIcon = findComponentByCodeLazy("m2.4 8.4 8.38-6.46a2");
@@ -371,6 +372,18 @@ interface UnifiedTheme {
     link?: string;
 }
 
+function LumenCordThemeSwitch() {
+    const { showTheme } = lumenCordThemeSettings.use(["showTheme"]);
+    return (
+        <FormSwitch
+            title="LumenCord Theme (built in)"
+            description="The official LumenCord look: misty violet galaxy, glass panels and the owner card. Turn it off to use Discord's normal look or your own themes."
+            value={showTheme}
+            onChange={setLumenCordThemeEnabled}
+        />
+    );
+}
+
 function ThemesTab() {
     const settings = useSettings(["themeLinks", "enabledThemeLinks", "enabledThemes", "enableOnlineThemes", "pinnedThemes"]);
 
@@ -662,6 +675,8 @@ function ThemesTab() {
             <Paragraph className={Margins.bottom16}>
                 {t("Customize Discord's appearance with themes. Add local .css files or load themes directly from URLs. Themes with a cog wheel icon have customizable settings you can modify.")}
             </Paragraph>
+
+            <LumenCordThemeSwitch />
 
             <Heading>{t("Quick Actions")}</Heading>
             <Paragraph className={Margins.bottom16}>

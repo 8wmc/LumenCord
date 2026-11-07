@@ -82,7 +82,6 @@ const syncDirectionOptions = [
 ];
 
 const BADGE_OPTIONS: Array<{ label: string; value: BadgeSource }> = [
-    { label: "LumenCord Badges", value: "nightcord" },
     { label: "Equicord Badges", value: "equicord" },
     { label: "Vencord Badges", value: "vencord" },
     { label: "GlobalBadges", value: "globalbadges" },

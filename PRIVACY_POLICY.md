@@ -1,39 +1,39 @@
-# Privacy Policy
+# LumenCord Privacy Policy
 
-This file is a short summary. The full, always up to date Privacy Policy is published at
-**https://nightcord.st/privacy** — that page is the canonical version; if anything here ever
-conflicts with it, the website version applies.
+LumenCord is a free Discord client modification. Plugins, themes, settings and keybinds run on your own
+device and are not sent to LumenCord.
 
-## Summary
+## What LumenCord stores and why
 
-Nightcord is a client modification for Discord. Most functionality (plugins, themes, settings,
-keybinds) runs entirely on your device and is never sent to us.
+To give out badges, we store your Discord user ID, username, display name, the date you first opened
+LumenCord, and your current game session (game name and time played). This is only used to show badges.
+It's kept privately and never sold or shared. You can turn badges off in Settings anytime, and your data
+is deleted.
 
-A small set of **opt-in** features talk to our backend at `api.nightcord.st`:
+Details:
 
-- Signing in with Discord (OAuth2, scopes `identify` and `guilds.join`) — stores your Discord
-  user ID, username, display name, avatar URL, and OAuth access/refresh tokens so you stay
-  signed in. We never see your Discord password.
-- Cloud Settings Sync — your full plugin configuration, if you turn this on, linked to your
-  Discord user ID so it can be restored on another device.
-- Per-plugin sync — individual plugins may store settings server-side, keyed by plugin name and
-  your Discord user ID, with a private/public toggle you control.
-- Custom profile badges — any badge image you choose to upload, linked to your Discord user ID.
-- Community-role cosmetic badges — your Discord user ID plus the roles you hold in the official
-  Nightcord server, used only to grant cosmetic badges.
-- Username-history lookups — on demand only, forwards the looked-up Discord user ID to a
-  third-party username-history provider.
+- **When it starts:** only after you press **Verify with Discord** in Settings → LumenCord Badges.
+  Verifying asks Discord for the `identify` scope only (your user ID and username). LumenCord never sees
+  your password, and never stores your Discord token.
+- **Where it lives:** the LumenCord badge server (a Cloudflare Worker with a private database). It is
+  never put in the public GitHub repo.
+- **What other people can see:** other LumenCord users only get your badge info (the date you started
+  and your current or last game session) when they look at your profile, never your username or display
+  name from our server.
+- **Game sessions:** only the game name and how long you've played this session. After you stop, your
+  last session stays until you start a different game, then it's replaced.
+- **Turning it off:** switch off "Share my LumenCord badges" in Settings → LumenCord Badges. Everything
+  the badge server has about you is deleted straight away.
+- **Hand-out and staff badges:** these are listed by Discord user ID in the public `badges.json` file in
+  the GitHub repo, because the LumenCord team adds them by hand. Ask the team if you want yours removed.
 
-If you never sign in with Discord inside Nightcord, none of the above applies to you.
+## Other connections
 
-Our servers also process standard technical logs (IP address, user agent, timestamps) for
-rate-limiting and abuse prevention, like virtually any web service. We do not use third-party
-analytics or advertising trackers, do not read or store your messages/DMs/calls, and do not sell
-or share data with advertisers or data brokers.
+LumenCord also talks to GitHub (updates, changelog and the badge list), and to outside services only when
+you turn on a plugin that needs one. Cloudflare, which hosts the badge server, handles normal web request
+data (like IP addresses) to deliver the service; LumenCord itself does not save IP addresses.
 
-Since Nightcord modifies the official Discord client, all messaging, calls, and server activity
-still happen through Discord's own infrastructure and is governed by
+All messaging, calls and server activity still go through Discord and are covered by
 [Discord's Privacy Policy](https://discord.com/privacy/).
 
-For the full breakdown (data retention, deletion, browser extension permissions, contact
-details), see **https://nightcord.st/privacy**.
+Source code: https://github.com/8wmc/LumenCord

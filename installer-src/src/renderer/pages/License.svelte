@@ -10,19 +10,19 @@
     import {onMount} from "svelte";
 
     onMount(() => {
-        hasLoaded.set(true); // Use this to avoid initial transition caused by router
+        hasLoaded.set(true);
     });
 
     if (!$hasAgreed) canGoForward.set(false);
     else canGoForward.set(true);
-    canGoBack.set(false);
+    canGoBack.set(true);
 
     function toggleAgree({target}) {
         hasAgreed.set(target.checked);
         canGoForward.set(target.checked);
     }
 
-    nextPage.set("/actions");
+    nextPage.set("/credits");
 
     let licenseText = "";
 

@@ -93,10 +93,10 @@ async function loadBadges(url: string, noCache = false) {
 
 // LumenCord badges come from badges.json in the LumenCord GitHub repo (edit that file to give people badges).
 // Format: { "<discord user id>": [{ "badge": "<image url>", "tooltip": "<text>" }] }
-const LUMENCORD_BADGES_URL = "https://raw.githubusercontent.com/8wmc/LumenCord/main/badges.json";
 
-async function loadNightcordBadges(noCache = false): Promise<Record<string, any>> {
-    return loadBadges(LUMENCORD_BADGES_URL, noCache);
+// LumenCord badges are handled by the LumenCordBadges plugin (badges.json "people" format + badge server)
+async function loadNightcordBadges(_noCache = false): Promise<Record<string, any>> {
+    return {};
 }
 
 async function loadAllBadges(noCache = false) {

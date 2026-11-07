@@ -43,6 +43,15 @@ function StatusPulseIcon(props: IconProps) {
     );
 }
 
+function LumenBadgeIcon(props: IconProps) {
+    return (
+        <svg {...props} width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2 14.6 7.3 20.5 8.2 16.2 12.3 17.2 18.1 12 15.4 6.8 18.1 7.8 12.3 3.5 8.2 9.4 7.3Z" />
+            <path d="M8.5 17.5 7 22l5-2 5 2-1.5-4.5" />
+        </svg>
+    );
+}
+
 function CodeIcon(props: IconProps) {
     return (
         <svg {...props} width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -52,6 +61,7 @@ function CodeIcon(props: IconProps) {
     );
 }
 import IconsTab from "@nightcordplugins/iconViewer/components/IconsTab";
+import LumenCordBadgesTab from "@nightcordplugins/lumenCordBadges/BadgesTab";
 import DmPurgerTab from "@nightcordplugins/dmPurger/components/DmPurgerTab";
 import { gitHashShort } from "@shared/vencordUserAgent";
 import { Devs } from "@utils/constants";
@@ -302,6 +312,12 @@ export default definePlugin({
                 panelTitle: "LumenCord Fonts",
                 Component: FontsTab,
                 Icon: FontIcon
+            }),
+            buildEntry({
+                key: "lumencord_badges",
+                title: "LumenCord Badges",
+                Component: LumenCordBadgesTab,
+                Icon: LumenBadgeIcon
             }),
             settings.store.showStatus && buildEntry({
                 key: "nightcord_status",

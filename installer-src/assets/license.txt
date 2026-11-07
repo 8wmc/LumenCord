@@ -24,10 +24,17 @@ your Discord account banned by Discord itself. LumenCord's developers do not
 monitor, log, or report what you do with the software.
 
 4. YOUR DATA
-LumenCord does not collect your Discord account token, password, or two-factor
-codes, and does not send your settings to any server unless you explicitly set one
-up yourself. LumenCord only talks to Discord's own servers and, when you ask it to,
-GitHub, to check for updates.
+LumenCord never collects your Discord account token, password, or two-factor codes.
+
+What LumenCord stores and why: To give out badges, we store your Discord user ID,
+username, display name, the date you first opened LumenCord, and your current game
+session (game name and time played). This is only used to show badges. It's kept
+privately and never sold or shared. You can turn badges off in Settings anytime,
+and your data is deleted.
+
+Badges only start after you choose "Verify with Discord" in Settings > LumenCord
+Badges. Apart from that, LumenCord talks to Discord's own servers, GitHub (for
+updates and the badge list), and any server you set up yourself.
 
 5. YOUR RIGHTS UNDER THE GPL
 Nothing in this agreement takes away any right the GPL-3.0 licence gives you,

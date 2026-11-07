@@ -17,6 +17,8 @@ export const ImageScriptsAndCssSrc = [...ImageAndCssSrc, "script-src", "worker-s
 export const CSPSrc = ["style-src", "connect-src", "img-src", "frame-src", "font-src", "media-src", "worker-src"];
 
 export const CspPolicies: PolicyMap = {
+    // LumenCord badge server (member stages, game stages, Verify with Discord)
+    "lumencord-badges.8wmc.workers.dev": ConnectSrc,
     "http://localhost:*": ImageAndCssSrc,
     "http://127.0.0.1:*": ImageAndCssSrc,
     "localhost:*": ImageAndCssSrc,
