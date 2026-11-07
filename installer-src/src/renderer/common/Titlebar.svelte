@@ -92,7 +92,7 @@
 
     .brand-sub {
         font-size: 11px;
-        color: var(--text-muted);
+        color: rgba(233, 222, 255, 0.72);
     }
 
     .window-controls {

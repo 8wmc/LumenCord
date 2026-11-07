@@ -24,7 +24,8 @@ Look: deep purple / navy with violet accent. Logo: glowing "L" with a ring on a 
 - Removed for safety: GhostClient, GhostInstaller (downloaded and ran programs from Nightcord's server),
   MultiInstance and TokenImporter (stored Discord tokens in plain files). Rule: LumenCord never stores tokens.
 - Installer downloads and the DM Purger email login now verify HTTPS certificates.
-- Icon Finder no longer crashes; if Discord's icons can't be found it shows a message.
+- Icon Finder finds Discord icons three ways (hook, loaded modules, loading the icon module directly) and handles
+  wrapped (memo/forwardRef) icons. If all fail it shows a message instead of crashing.
 
 ## Rules agreed
 - Keep GPL credit visible but small. Don't hide the code's origin.
@@ -37,4 +38,5 @@ Look: deep purple / navy with violet accent. Logo: glowing "L" with a ring on a 
   Vencord's server. A self-hosted server would be a separate project.
 - Icon Finder may show "can't load icons" if Discord changed its code; needs the ConcatenatedModules patch updated.
 - Stereo plugin removed (its voice files were missing).
-- The "Test" workflow (code-style checks) fails; it doesn't block releases.
+- "Test" workflow: build checks must pass; TypeScript/ESLint/Stylelint run as a report in the run summary (never fail).
+  Clean those notes up over time using that summary.

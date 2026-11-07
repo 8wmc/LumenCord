@@ -33,8 +33,13 @@
 
     .header {
         color: var(--text-light);
-        font-weight: 600;
-        font-size: 16px;
+        font-weight: 700;
+        font-size: 17px;
+        letter-spacing: 0.2px;
+        background: linear-gradient(90deg, #ffffff 0%, #e9d5ff 55%, #f0abfc 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
     .paragraph {

@@ -28,6 +28,7 @@
         width: 20px;
         height: 20px;
         margin-right: 8px;
-        fill: var(--accent);
+        fill: #c084fc;
+        filter: drop-shadow(0 0 6px rgba(192, 132, 252, 0.75));
     }
 </style>

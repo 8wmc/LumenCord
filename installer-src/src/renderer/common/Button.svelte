@@ -50,6 +50,16 @@
         background: var(--accent-gradient);
         color: #ffffff;
         box-shadow: var(--accent-glow);
+        animation: lumen-glow 3.2s ease-in-out infinite;
+    }
+
+    .button.type-primary[disabled] {
+        animation: none;
+    }
+
+    @keyframes lumen-glow {
+        0%, 100% { box-shadow: 0 0 14px rgba(168, 85, 247, 0.35); }
+        50% { box-shadow: 0 0 24px rgba(217, 70, 239, 0.6); }
     }
 
     .button.type-primary:hover {

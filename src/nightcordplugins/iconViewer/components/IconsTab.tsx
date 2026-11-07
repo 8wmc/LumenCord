@@ -13,7 +13,7 @@ import { debounce } from "@shared/debounce";
 import { Margins } from "@utils/margins";
 import { classes } from "@utils/misc";
 import { useIntersection } from "@utils/react";
-import { findAll } from "@webpack";
+import { findAll, search as searchModules, wreq } from "@webpack";
 import { Clickable, TextInput, useCallback, useEffect, useMemo, useState } from "@webpack/common";
 
 import { IconsDef } from "../types";
@@ -21,18 +21,35 @@ import { openIconModal } from "./Modals";
 
 let cachedIcons: IconsDef | null = null;
 
+// Discord icons are either plain function components or wrapped ones (React.memo / forwardRef objects).
+function isComponent(value: any): boolean {
+    return typeof value === "function" || (value != null && typeof value === "object" && "$$typeof" in value);
+}
+
 function collectIcons(source: any, into: IconsDef) {
     if (!source || typeof source !== "object") return;
     for (const name of Object.keys(source)) {
         try {
-            const fn = source[name];
-            if (typeof fn === "function" && name.endsWith("Icon") && !(name in into)) into[name] = fn;
+            if (!name.endsWith("Icon") || name in into) continue;
+            const value = source[name];
+            if (isComponent(value)) into[name] = value;
         } catch { }
     }
 }
 
-// LumenCord: never crash the tab. If Discord changed its code and the normal hook missed,
-// look through Discord's loaded modules for icon sets instead.
+function looksLikeIconSet(m: any): boolean {
+    if (!m || typeof m !== "object") return false;
+    let count = 0;
+    for (const key in m) {
+        try {
+            if (key.endsWith("Icon") && isComponent(m[key]) && ++count >= 10) return true;
+        } catch { }
+    }
+    return false;
+}
+
+// LumenCord: never crash the tab, and find Discord's icons three ways:
+// 1. the ConcatenatedModules hook, 2. modules Discord already loaded, 3. load Discord's icon module directly.
 function getIcons(): IconsDef {
     if (cachedIcons && Object.keys(cachedIcons).length) return cachedIcons;
 
@@ -41,15 +58,23 @@ function getIcons(): IconsDef {
 
     if (Object.keys(icons).length < 50) {
         try {
-            const isIconSet = (m: any) => {
-                if (!m || typeof m !== "object") return false;
-                let count = 0;
-                for (const key in m) {
-                    if (key.endsWith("Icon") && typeof m[key] === "function" && ++count >= 10) return true;
-                }
-                return false;
-            };
-            for (const mod of findAll(isIconSet)) collectIcons(mod, icons);
+            for (const mod of findAll(looksLikeIconSet)) collectIcons(mod, icons);
+        } catch { }
+    }
+
+    if (Object.keys(icons).length < 50) {
+        try {
+            for (const id of Object.keys(searchModules("AngleBracketsIcon"))) {
+                try {
+                    const exports = wreq(id as any);
+                    collectIcons(exports, icons);
+                    if (exports && typeof exports === "object") {
+                        for (const key of Object.keys(exports)) {
+                            try { if (looksLikeIconSet(exports[key])) collectIcons(exports[key], icons); } catch { }
+                        }
+                    }
+                } catch { }
+            }
         } catch { }
     }
 
@@ -60,7 +85,11 @@ function getIcons(): IconsDef {
 function searchMatch(search: string, name: string, Icon: any, searchByFunction: boolean): boolean {
     if (!search) return true;
 
-    if (searchByFunction) return String(Icon).includes(search);
+    if (searchByFunction) {
+        // Wrapped icons keep their real function in .type (memo) or .render (forwardRef)
+        const fn = typeof Icon === "function" ? Icon : (Icon?.type?.render ?? Icon?.type ?? Icon?.render);
+        return String(fn).includes(search);
+    }
 
     const words = name.replace(/([A-Z]([a-z]+)?)/g, " $1").toLowerCase().split(" ");
     const keywords = search.toLowerCase().split(" ");
