@@ -33,10 +33,7 @@ jobs:
             - name: Build web
               run: pnpm buildWebStandalone
 
-            - name: Build Desktop bundle (patcher.js, renderer.js, preload.js, asar)
-              run: pnpm run buildDesktop
-
-            - name: Build Desktop (Windows, Linux, macOS bundle)
+            - name: Build LumenCord (patcher.js, renderer.js, preload.js)
               run: pnpm buildStandalone
 
             - name: Generate plugin lists
