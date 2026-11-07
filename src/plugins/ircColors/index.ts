@@ -16,18 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { definePluginSettings } from "@api/Settings";
+import { definePluginSettings, Settings } from "@api/Settings";
+import { getCustomColorString } from "@equicordplugins/customUserColors";
 import { hash as h64 } from "@intrnl/xxhash64";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
-import { useMemo } from "@webpack/common";
+import { useMemo, UserStore } from "@webpack/common";
 
 // Calculate a CSS color string based on the user ID
 function calculateNameColorForUser(id?: string) {
-    const { lightness, saturation, seed } = settings.use(["lightness", "saturation", "seed"]);
-    const idHash = useMemo(() => id ? h64(id + seed) : null, [id, seed]);
+    const { lightness } = settings.use(["lightness"]);
+    const idHash = useMemo(() => id ? h64(id) : null, [id]);
 
-    return idHash && `hsl(${idHash % 360n}, ${saturation}%, ${lightness}%)`;
+    return idHash && `hsl(${idHash % 360n}, 100%, ${lightness}%)`;
 }
 
 const settings = definePluginSettings({
@@ -35,16 +36,6 @@ const settings = definePluginSettings({
         description: "Lightness, in %. Change if the colors are too light or too dark",
         type: OptionType.NUMBER,
         default: 70,
-    },
-    saturation: {
-        description: "Saturation, in %. Change if the colors are too vibrant or dull",
-        type: OptionType.NUMBER,
-        default: 100
-    },
-    seed: {
-        description: "Changing this will shuffle everyone's username color to a new color",
-        type: OptionType.STRING,
-        default: "",
     },
     memberListColors: {
         description: "Replace role colors in the member list",
@@ -120,7 +111,11 @@ export default definePlugin({
         const colorString = context?.author?.colorString;
         const color = calculateNameColorForUser(userId);
 
-        // Color preview in role settings
+        if (Settings.plugins.CustomUserColors.enabled) {
+            const customColor = getCustomColorString(userId, true);
+            if (customColor) return customColor;
+        }
+
         if (context?.message?.channel_id === "1337" && userId === "313337")
             return colorString;
 
@@ -128,9 +123,25 @@ export default definePlugin({
             return colorString;
         }
 
-        return (!settings.store.applyColorOnlyToUsersWithoutColor || !colorString)
+        const dmColor = (!settings.store.applyColorOnlyToUsersWithoutColor || !colorString)
             ? color
             : colorString;
+
+        // guarantee minimum difference in dms
+        if (context?.channel?.isPrivate?.() && dmColor && userId) {
+            const currentUserId = UserStore.getCurrentUser()?.id;
+            if (currentUserId && userId !== currentUserId) {
+                const currentUserColor = Number(h64(currentUserId) % 360n);
+                const otherUserColor = Number(h64(userId) % 360n);
+                const colorDiff = Math.min(Math.abs(currentUserColor - otherUserColor), 360 - Math.abs(currentUserColor - otherUserColor));
+                if (colorDiff < 70) {
+                    const newColor = (otherUserColor + 180) % 360;
+                    return `hsl(${newColor}, 100%, ${settings.store.lightness}%)`;
+                }
+            }
+        }
+
+        return dmColor;
     },
 
     calculateNameColorForListContext(context: any) {
@@ -138,6 +149,11 @@ export default definePlugin({
             const id = context?.user?.id;
             const colorString = context?.colorString;
             const color = calculateNameColorForUser(id);
+
+            if (Settings.plugins.CustomUserColors.enabled) {
+                const customColor = getCustomColorString(id, true);
+                if (customColor) return customColor;
+            }
 
             if (settings.store.applyColorOnlyInDms && context?.guildId !== undefined) {
                 return colorString;

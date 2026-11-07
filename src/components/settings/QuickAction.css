@@ -14,16 +14,18 @@
 
 .vc-settings-quickActions-pill {
     all: unset;
-    cursor: pointer;
     background: var(--control-secondary-background-default);
     color: var(--control-secondary-text-default, var(--text-default));
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5em;
-    padding: 8px 9px;
+    padding: 8px 12px 8px 8px;
     border-radius: 8px;
     transition: 0.1s ease-out;
     box-sizing: border-box;
+    line-height: 1;
+    cursor: pointer;
 }
 
 .vc-settings-quickActions-pill:hover {
@@ -40,4 +42,19 @@
 .vc-settings-quickActions-img {
     width: 24px;
     height: 24px;
+    flex-shrink: 0;
+}
+
+.vc-settings-quickActions-pill:disabled,
+.vc-settings-quickActions-pill[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+    transform: none !important;
+    box-shadow: none !important;
+    color: var(--text-muted, #949ba4);
+}
+
+.vc-settings-quickActions-pill .vc-owner-crown-icon {
+    color: inherit;
 }

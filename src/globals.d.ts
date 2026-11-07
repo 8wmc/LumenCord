@@ -39,12 +39,13 @@ declare global {
     export var IS_UPDATER_DISABLED: boolean;
     export var IS_DEV: boolean;
     export var IS_REPORTER: boolean;
+    export var IS_COMPANION_TEST: boolean;
     export var IS_ANTI_CRASH_TEST: boolean;
     export var IS_DISCORD_DESKTOP: boolean;
     export var IS_VESKTOP: boolean;
+    export var IS_EQUIBOP: boolean;
     export var VERSION: string;
     export var BUILD_TIMESTAMP: number;
-    export var DESKTOP_MONACO_EDITOR_URL: string;
 
     export var VencordNative: typeof import("./VencordNative").default;
     export var Vencord: typeof import("./Vencord");
@@ -60,33 +61,11 @@ declare global {
      */
     export var DiscordNative: any;
     export var Vesktop: any;
+    export var Equibop: any;
     export var VesktopNative: any;
+    export var unsafeWindow: any;
 
     interface Window extends Record<PropertyKey, any> { }
-
-    interface MediaTrackConstraintSet {
-        restrictOwnAudio?: boolean;
-        suppressLocalAudioPlayback?: boolean;
-    }
-
-
-    type CaptureController = {
-        decreaseZoomLevel(): Promise<undefined>;
-        forwardWheel(): Promise<undefined>;
-        getSupportedZoomLevels(): number[];
-        increaseZoomLevel(): Promise<undefined>;
-        resetZoomLevel(): Promise<undefined>;
-        setFocusBehavior(): undefined;
-    };
-
-    interface DisplayMediaStreamOptions {
-        surfaceSwitching?: "include" | "exclude";
-        selfBrowserSurface?: "include" | "exclude";
-        systemAudio?: "include" | "exclude";
-        monitorTypeSurfaces?: "include" | "exclude";
-        controller?: CaptureController;
-        preferCurrentTab?: boolean;
-    }
 }
 
 export { };

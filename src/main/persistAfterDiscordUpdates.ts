@@ -1,83 +1,61 @@
 /*
- * Vencord, a modification for Discord's desktop app
- * Copyright (c) 2022 Vendicated and contributors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
+ * Nightcord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/**
+ * fallback for `hostUpdateHook.ts`. scans for a newer squirrel sibling
+ * `app-VERSION` directory on quit and re-applies the patch there.
+ */
 
 import { app } from "electron";
 import EventEmitter from "events";
-import { copyFileSync, existsSync, readdirSync, renameSync } from "original-fs";
-import { basename, dirname, join } from "path";
+import { dirname, join } from "path";
 
-function isNewer($new: string, old: string) {
-    const newParts = $new.slice(4).split(".").map(Number);
-    const oldParts = old.slice(4).split(".").map(Number);
-
-    for (let i = 0; i < oldParts.length; i++) {
-        if (newParts[i] > oldParts[i]) return true;
-        if (newParts[i] < oldParts[i]) return false;
-    }
-    return false;
-}
+import { findStaleSibling, patchResourcesDir } from "./applyHostPatch";
 
 function patchLatest() {
     if (process.env.DISABLE_UPDATER_AUTO_PATCHING) return;
 
     try {
-        const currentAppPath = dirname(process.execPath);
-        const currentVersion = basename(currentAppPath);
-        const discordPath = join(currentAppPath, "..");
-
-        const latestVersion = readdirSync(discordPath).reduce((prev, curr) => {
-            return (curr.startsWith("app-") && isNewer(curr, prev))
-                ? curr
-                : prev;
-        }, currentVersion as string);
-
-        if (latestVersion === currentVersion) return;
-
-        const oldResources = join(discordPath, currentVersion, "resources");
-        const oldVencordAsar = join(oldResources, "app.asar");
-
-        const resources = join(discordPath, latestVersion, "resources");
-        const newAppAsar = join(resources, "app.asar");
-        const newAppAsarBackup = join(resources, "_app.asar");
-
-        if (!existsSync(oldVencordAsar) || !existsSync(newAppAsar) || existsSync(newAppAsarBackup)) return;
-
-        console.info(`[Vencord] Detected Host Update (${currentVersion} -> ${latestVersion}). Repatching...`);
-
-        renameSync(newAppAsar, newAppAsarBackup);
-        copyFileSync(oldVencordAsar, newAppAsar);
+        const stale = findStaleSibling(dirname(process.execPath));
+        if (stale) {
+            console.log("[Nightcord] Detected newer Discord host version at:", stale, "— applying patch now");
+            patchResourcesDir(stale, join(__dirname, "patcher.js"));
+        }
     } catch (err) {
-        console.error("[Vencord] Failed to repatch latest host update", err);
+        console.error("[Nightcord] Failed to repatch latest host update:", err);
     }
 }
 
 if (process.platform === "win32" || process.platform === "linux") {
-    EventEmitter.prototype.emit = new Proxy(EventEmitter.prototype.emit, {
-        apply(target, thisArg, argArray) {
-            if (argArray[0] === "host-updated") {
-                patchLatest();
-            }
+    // 1. Immediately patch if newer version exists on startup
+    try {
+        patchLatest();
+    } catch { }
 
-            return Reflect.apply(target, thisArg, argArray);
-        },
-    });
+    // 2. Hook EventEmitter for instant Squirrel / Discord host update completion
+    try {
+        EventEmitter.prototype.emit = new Proxy(EventEmitter.prototype.emit, {
+            apply(target, thisArg, argArray) {
+                if (argArray[0] === "host-updated") {
+                    try { patchLatest(); } catch { }
+                }
+                return Reflect.apply(target, thisArg, argArray);
+            },
+        });
+    } catch (err) {
+        console.error("[Nightcord] Failed to proxy EventEmitter for host updates:", err);
+    }
 
-    // Try to patch latest on before-quit
-    // Discord's Win32 updater will call app.quit() on restart and open new version on will-quit
+    // 3. Periodic check every 3 minutes for background-downloaded updates
+    const timer = setInterval(() => {
+        try { patchLatest(); } catch { }
+    }, 3 * 60 * 1000);
+    if (typeof timer.unref === "function") timer.unref();
+
+    // 4. Hook app quit events
     app.on("before-quit", patchLatest);
+    app.on("will-quit", patchLatest);
 }

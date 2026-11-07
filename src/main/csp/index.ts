@@ -1,6 +1,6 @@
 /*
- * Vencord, a Discord client mod
- * Copyright (c) 2025 Vendicated and contributors
+ * Nightcord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -12,12 +12,9 @@ type PolicyMap = Record<string, string[]>;
 export const ConnectSrc = ["connect-src"];
 export const ImageSrc = [...ConnectSrc, "img-src"];
 export const CssSrc = ["style-src", "font-src"];
-export const ImageAndMediaSrc = [...ImageSrc, "media-src"];
 export const ImageAndCssSrc = [...ImageSrc, ...CssSrc];
 export const ImageScriptsAndCssSrc = [...ImageAndCssSrc, "script-src", "worker-src"];
-
-// Plugins can whitelist their own domains by importing this object in their native.ts
-// script and just adding to it. But generally, you should just edit this file instead
+export const CSPSrc = ["style-src", "connect-src", "img-src", "frame-src", "font-src", "media-src", "worker-src"];
 
 export const CspPolicies: PolicyMap = {
     "http://localhost:*": ImageAndCssSrc,
@@ -25,54 +22,70 @@ export const CspPolicies: PolicyMap = {
     "localhost:*": ImageAndCssSrc,
     "127.0.0.1:*": ImageAndCssSrc,
 
-    "*.github.io": ImageAndCssSrc, // GitHub pages, used by most themes
-    "github.com": ImageAndCssSrc, // GitHub content (stuff uploaded to markdown forms), used by most themes
-    "raw.githubusercontent.com": ImageAndCssSrc, // GitHub raw, used by some themes
-    "*.gitlab.io": ImageAndCssSrc, // GitLab pages, used by some themes
-    "gitlab.com": ImageAndCssSrc, // GitLab raw, used by some themes
-    "*.codeberg.page": ImageAndCssSrc, // Codeberg pages, used by some themes
-    "codeberg.org": ImageAndCssSrc, // Codeberg raw, used by some themes
+    "api.nightcord.st": ConnectSrc,
+    "https://api.nightcord.st": ConnectSrc,
+    "nightcord.st": ConnectSrc,
+    "*.nightcord.st": ConnectSrc,
 
-    "*.githack.com": ImageAndCssSrc, // githack (namely raw.githack.com), used by some themes
-    "jsdelivr.net": ImageAndCssSrc, // jsDelivr, used by very few themes
+    "*.github.io": ImageAndCssSrc,
+    "github.com": ImageAndCssSrc,
+    "raw.githubusercontent.com": ImageAndCssSrc,
+    "*.raw.githubusercontent.com": ImageAndCssSrc,
+    "github-production-user-asset-6210df.s3.amazonaws.com": CSPSrc,
+    "*.gitlab.io": ImageAndCssSrc,
+    "gitlab.com": ImageAndCssSrc,
+    "*.codeberg.page": ImageAndCssSrc,
+    "codeberg.org": ImageAndCssSrc,
 
-    "fonts.googleapis.com": CssSrc, // Google Fonts, used by many themes
+    "*.githack.com": ImageAndCssSrc,
+    "jsdelivr.net": ImageAndCssSrc,
 
-    "i.imgur.com": ImageSrc, // Imgur, used by some themes
-    "i.ibb.co": ImageSrc, // ImgBB, used by some themes
-    "i.pinimg.com": ImageSrc, // Pinterest, used by some themes
-    "files.catbox.moe": ImageAndCssSrc, // Catbox, used by some themes
+    "fonts.googleapis.com": CssSrc,
 
-    "cdn.discordapp.com": ImageAndCssSrc, // Discord CDN, used by Vencord and some themes to load media
-    "media.discordapp.net": ImageSrc, // Discord media CDN, possible alternative to Discord CDN
+    "i.imgur.com": ImageSrc,
+    "i.ibb.co": ImageSrc,
+    "i.pinimg.com": ImageSrc,
+    "*.tenor.com": ImageSrc,
+    "files.catbox.moe": ImageAndCssSrc,
 
-    // CDNs used for some things by Vencord.
-    // FIXME: we really should not be using CDNs anymore
+    "cdn.discordapp.com": ImageAndCssSrc,
+    "media.discordapp.net": ImageSrc,
+
     "cdnjs.cloudflare.com": ImageScriptsAndCssSrc,
     "cdn.jsdelivr.net": ImageScriptsAndCssSrc,
 
-    // Function Specific
-    "api.github.com": ConnectSrc, // used for updating Vencord itself
-    "ws.audioscrobbler.com": ConnectSrc, // Last.fm API
-    "musicbrainz.org": ConnectSrc,
-    "*.listenbrainz.org": ConnectSrc,
-    "coverartarchive.org": ConnectSrc,
-    "archive.org": ConnectSrc,
-    "*.archive.org": ConnectSrc,
-    "translate-pa.googleapis.com": ConnectSrc, // Google Translate API
-    "*.vencord.dev": ImageSrc, // VenCloud (api.vencord.dev) and Badges (badges.vencord.dev)
-    "manti.vendicated.dev": ImageSrc, // ReviewDB API
-    "decor.fieryflames.dev": ConnectSrc, // Decor API
-    "ugc.decor.fieryflames.dev": ImageSrc, // Decor CDN
-    "sponsor.ajay.app": ConnectSrc, // Dearrow API
-    "dearrow-thumb.ajay.app": ImageSrc, // Dearrow Thumbnail CDN
-    "usrbg.is-hardly.online": ImageSrc, // USRBG API
-    "icons.duckduckgo.com": ImageSrc, // DuckDuckGo Favicon API (Reverse Image Search)
+    "api.groq.com": ConnectSrc,
+    "*.speech.googleapis.com": ConnectSrc,
+    "speech.googleapis.com": ConnectSrc,
+    "www.google.com": ConnectSrc,
+    "*.google.com": ConnectSrc,
 
-    // Tenor & Giphy, used by GifProviderSwitcher plugin and some themes
-    "*.tenor.com": ImageAndMediaSrc,
-    "*.tenor.co": ImageAndMediaSrc,
-    "*.giphy.com": ImageAndMediaSrc,
+    "api.github.com": ConnectSrc,
+    "ws.audioscrobbler.com": ConnectSrc,
+    "translate-pa.googleapis.com": ConnectSrc,
+    "*.vencord.dev": ImageSrc,
+    "manti.vendicated.dev": ImageSrc,
+    "decor.fieryflames.dev": ConnectSrc,
+    "ugc.decor.fieryflames.dev": ImageSrc,
+    "sponsor.ajay.app": ConnectSrc,
+    "dearrow-thumb.ajay.app": ImageSrc,
+    "usrbg.is-hardly.online": ImageSrc,
+    "icons.duckduckgo.com": ImageSrc,
+
+    "*.sndcdn.com": CSPSrc,
+    "soundcloud.com": CSPSrc,
+    "*.soundcloud.com": CSPSrc,
+
+    // hCaptcha (Discord captcha system)
+    "hcaptcha.com": ImageScriptsAndCssSrc,
+    "*.hcaptcha.com": ImageScriptsAndCssSrc,
+    "newassets.hcaptcha.com": ImageScriptsAndCssSrc,
+    "imgs.hcaptcha.com": ImageScriptsAndCssSrc,
+    "api2.hcaptcha.com": ImageScriptsAndCssSrc,
+
+    // Cloudflare Turnstile / cdn-cgi captcha
+    "challenges.cloudflare.com": ImageScriptsAndCssSrc,
+    "*.cloudflare.com": ImageScriptsAndCssSrc,
 };
 
 const findHeader = (headers: PolicyMap, headerName: Lowercase<string>) => {
@@ -97,11 +110,22 @@ const stringifyPolicy = (policy: PolicyMap): string =>
         .map(directive => directive.flat().join(" "))
         .join("; ");
 
-
 const patchCsp = (headers: PolicyMap) => {
     const reportOnlyHeader = findHeader(headers, "content-security-policy-report-only");
     if (reportOnlyHeader)
         delete headers[reportOnlyHeader];
+
+    const permissionsPolicyHeader = findHeader(headers, "permissions-policy");
+    if (permissionsPolicyHeader) delete headers[permissionsPolicyHeader];
+
+    const permissionsPolicyReportOnlyHeader = findHeader(headers, "permissions-policy-report-only");
+    if (permissionsPolicyReportOnlyHeader) delete headers[permissionsPolicyReportOnlyHeader];
+
+    const featurePolicyHeader = findHeader(headers, "feature-policy");
+    if (featurePolicyHeader) delete headers[featurePolicyHeader];
+
+    const featurePolicyReportOnlyHeader = findHeader(headers, "feature-policy-report-only");
+    if (featurePolicyReportOnlyHeader) delete headers[featurePolicyReportOnlyHeader];
 
     const header = findHeader(headers, "content-security-policy");
 
@@ -114,13 +138,10 @@ const patchCsp = (headers: PolicyMap) => {
         };
 
         pushDirective("style-src", "'unsafe-inline'");
-        // we could make unsafe-inline safe by using strict-dynamic with a random nonce on our Vencord loader script https://content-security-policy.com/strict-dynamic/
-        // HOWEVER, at the time of writing (24 Jan 2025), Discord is INSANE and also uses unsafe-inline
-        // Once they stop using it, we also should
         pushDirective("script-src", "'unsafe-inline'", "'unsafe-eval'");
 
         for (const directive of ["style-src", "connect-src", "img-src", "font-src", "media-src", "worker-src"]) {
-            pushDirective(directive, "blob:", "data:", "vencord:", "vesktop:");
+            pushDirective(directive, "blob:", "data:", "vencord:", "vesktop:", "equicord:", "equibop:", "https://*.githubusercontent.com", "https://*.amazonaws.com");
         }
 
         for (const [host, directives] of Object.entries(NativeSettings.store.customCspRules)) {
@@ -140,29 +161,74 @@ const patchCsp = (headers: PolicyMap) => {
 };
 
 export function initCsp() {
-    session.defaultSession.webRequest.onHeadersReceived(({ responseHeaders, resourceType, url }, cb) => {
-        if (responseHeaders) {
-            if (url === DESKTOP_MONACO_EDITOR_URL) {
-                const header = findHeader(responseHeaders, "content-type") ?? "content-type";
-                responseHeaders[header] = ["text/html"];
-            }
-            if (resourceType === "mainFrame")
-                patchCsp(responseHeaders);
+    session.defaultSession.webRequest.onHeadersReceived((details, cb) => {
+        const responseHeaders = details.responseHeaders || {};
+        try {
+            const url = (details.url || "").toLowerCase();
+            const resourceType = details.resourceType;
+            const isSubFrame = resourceType === "subFrame";
+            const isYouTube = url.includes("youtube.com") || url.includes("googlevideo.com") || url.includes("youtube-nocookie.com");
+            const isTikTok = url.includes("tiktok.com") || url.includes("tiktokcdn.com");
 
-            // Fix hosts that don't properly set the css content type, such as
-            // raw.githubusercontent.com
+            if (isSubFrame) {
+                const cookieHeader = findHeader(responseHeaders, "set-cookie");
+                if (cookieHeader && Array.isArray(responseHeaders[cookieHeader])) {
+                    responseHeaders[cookieHeader] = responseHeaders[cookieHeader].map((cookie: string) => {
+                        let newCookie = cookie.replace(/; SameSite=(Lax|Strict)/gi, "");
+                        if (!newCookie.toLowerCase().includes("samesite=none")) {
+                            newCookie += "; SameSite=None";
+                        }
+                        if (!newCookie.toLowerCase().includes("secure")) {
+                            newCookie += "; Secure";
+                        }
+                        return newCookie;
+                    });
+                }
+
+                const cspHeader = findHeader(responseHeaders, "content-security-policy");
+                if (cspHeader) delete responseHeaders[cspHeader];
+
+                if (!isYouTube && !isTikTok) {
+                    const privateBrowserSettings = NativeSettings?.store?.plugins?.PrivateBrowser;
+                    const saveData = privateBrowserSettings?.saveData ?? false;
+                    if (!saveData) {
+                        const setCookieHeader = findHeader(responseHeaders, "set-cookie");
+                        if (setCookieHeader) delete responseHeaders[setCookieHeader];
+                    }
+                }
+            }
+
+            if (resourceType === "mainFrame") {
+                patchCsp(responseHeaders);
+            } else if (isSubFrame) {
+                patchCsp(responseHeaders);
+            }
+
             if (resourceType === "stylesheet") {
                 const header = findHeader(responseHeaders, "content-type");
-                if (header)
-                    responseHeaders[header] = ["text/css"];
+                if (header) responseHeaders[header] = ["text/css"];
             }
+
+            const xFrameOptions = findHeader(responseHeaders, "x-frame-options");
+            if (xFrameOptions) delete responseHeaders[xFrameOptions];
+
+            const permissionsPolicyHeader = findHeader(responseHeaders, "permissions-policy");
+            if (permissionsPolicyHeader) delete responseHeaders[permissionsPolicyHeader];
+            
+            const featurePolicyHeader = findHeader(responseHeaders, "feature-policy");
+            if (featurePolicyHeader) delete responseHeaders[featurePolicyHeader];
+
+            if (url.includes("nightcord.st") || url.includes("vencord.dev") || url.includes("equicord.org")) {
+                responseHeaders["access-control-allow-origin"] = ["*"];
+                responseHeaders["access-control-allow-methods"] = ["GET, POST, PUT, DELETE, OPTIONS"];
+                responseHeaders["access-control-allow-headers"] = ["*"];
+            }
+
+        } catch (e) {
+            console.error(e);
+        } finally {
+            cb({ cancel: false, responseHeaders });
         }
-
-        cb({ cancel: false, responseHeaders });
     });
-
-    // assign a noop to onHeadersReceived to prevent other mods from adding their own incompatible ones.
-    // For instance, OpenAsar adds their own that doesn't fix content-type for stylesheets which makes it
-    // impossible to load css from github raw despite our fix above
-    session.defaultSession.webRequest.onHeadersReceived = () => { };
 }
+

@@ -16,6 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+import { TextCompat } from "@components/BaseText";
+import { ButtonCompat } from "@components/Button";
+import { Divider } from "@components/Divider";
+import { FormSwitchCompat } from "@components/FormSwitch";
+import { Heading } from "@components/Heading";
+import { Paragraph } from "@components/Paragraph";
+import { TooltipContainer as TooltipContainerComponent } from "@components/TooltipContainer";
 import { TooltipFallback } from "@components/TooltipFallback";
 import { LazyComponent } from "@utils/lazyReact";
 import * as t from "@vencord/discord-types";
@@ -23,9 +30,34 @@ import { filters, find, findCssClassesLazy, mapMangledCssClasses, mapMangledModu
 
 import { waitForComponent } from "./internal";
 
+export const Forms = {
+    // TODO: Stop using this and use Heading/Paragraph directly
+    /** @deprecated use Heading from Vencord */
+    FormTitle: Heading,
+    /** @deprecated use Paragraph from Vencord */
+    FormText: Paragraph,
+    /** @deprecated don't use this */
+    FormSection: "section" as never, // Backwards compat since Vesktop uses this
+    /** @deprecated use `@components/Divider` */
+    FormDivider: Divider as never, // Backwards compat since Vesktop uses this
+};
+
+// TODO: Stop using this and use Paragraph/Span directly
+/** @deprecated use Paragraph, Span, or BaseText from Vencord */
+export const Text = TextCompat;
+/** @deprecated use Button from Vencord */
+export const Button = ButtonCompat;
+/** @deprecated Use FormSwitch from Vencord */
+export const Switch = FormSwitchCompat as never;
+
 export const Checkbox = waitForComponent<t.Checkbox>("Checkbox", filters.componentByCode('"data-toggleable-component":"checkbox'));
 
-export const Tooltip = waitForComponent<t.Tooltip>("Tooltip", m => m.prototype?.shouldShowTooltip && m.prototype.render, TooltipFallback);
+export const Tooltip = waitForComponent<t.Tooltip>(
+    "Tooltip",
+    m => (m.prototype?.shouldShowTooltip && m.prototype.render) || filters.componentByCode("VoidTooltip cannot find DOM node")(m),
+    TooltipFallback
+);
+export const TooltipContainer = TooltipContainerComponent as never;
 
 // FIXME: t.TextInput was for the old void components, and is not 100% correct for the mana component
 export const TextInput = waitForComponent<t.TextInput>("TextInput", filters.componentByCode('setHasValue?.(""!==', '="text",'));
@@ -49,6 +81,11 @@ export function setColorPicker(component: t.ColorPicker) {
 export let RoleMemberPopout: t.RoleMemberPopout = () => null;
 export function setRoleMemberPopout(component: t.RoleMemberPopout) {
     RoleMemberPopout = component;
+}
+
+export let NewCustomizationSection: t.ComponentSection = () => null;
+export function setNewCustomizationSection(component: t.ComponentSection) {
+    NewCustomizationSection = component;
 }
 
 export let createScroller: ((scrollbarClassName: string, fadeClassName: string, customThemeClassName: string) => t.ScrollerThin) | undefined;
@@ -78,7 +115,7 @@ export const ScrollerAuto = LazyComponent(() => createScroller?.(scrollerClasses
 export const ListScrollerThin = LazyComponent(() => createListScroller(listScrollerClasses.thin, listScrollerClasses.fade, "", ResizeObserver));
 export const ListScrollerAuto = LazyComponent(() => createListScroller(listScrollerClasses.auto, listScrollerClasses.fade, "", ResizeObserver));
 
-export const FocusLock = waitForComponent<t.FocusLock>("FocusLock", filters.componentByCode(".containerRef,{disableReturn:"));
+export const FocusLock = waitForComponent<t.FocusLock>("FocusLock", filters.componentByCode(".containerRef,{keyboardModeEnabled:"));
 
 export let useToken: t.useToken;
 waitFor(m => {

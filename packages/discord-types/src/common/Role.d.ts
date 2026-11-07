@@ -13,11 +13,11 @@ export interface Role {
         secondary_color: number | undefined;
         tertiary_color: number | undefined;
     };
-    description: string | undefined;
+    description: string | null;
     flags: RoleFlags;
     guildId: string;
     hoist: boolean;
-    icon: string | undefined;
+    icon: string | null;
     id: string;
     managed: boolean;
     mentionable: boolean;
@@ -27,11 +27,11 @@ export interface Role {
     tags: {
         bot_id?: string;
         integration_id?: string;
-        premium_subscriber?: unknown;
+        premium_subscriber?: null;
         subscription_listing_id?: string;
-        available_for_purchase?: unknown;
-        guild_connections?: unknown;
+        available_for_purchase?: null;
+        guild_connections?: null;
     } | undefined;
-    unicodeEmoji: string | undefined;
+    unicodeEmoji: string | null;
     version: number | undefined;
 }

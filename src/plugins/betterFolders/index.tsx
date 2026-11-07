@@ -23,8 +23,8 @@ import { Devs } from "@utils/constants";
 import { getIntlMessage } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
-import { findByPropsLazy, findStoreLazy } from "@webpack";
-import { FluxDispatcher } from "@webpack/common";
+import { findByPropsLazy } from "@webpack";
+import { ExpandedGuildFolderStore, FluxDispatcher, SortedGuildStore } from "@webpack/common";
 import { ReactNode } from "react";
 
 import FolderSideBar from "./FolderSideBar";
@@ -35,8 +35,6 @@ enum FolderIconDisplay {
     MoreThanOneFolderExpanded
 }
 
-export const ExpandedGuildFolderStore = findStoreLazy("ExpandedGuildFolderStore");
-export const SortedGuildStore = findStoreLazy("SortedGuildStore");
 const FolderUtils = findByPropsLazy("move", "toggleGuildFolderExpand");
 
 let lastGuildId = null as string | null;
@@ -143,6 +141,7 @@ export default definePlugin({
     name: "BetterFolders",
     description: "Shows server folders on dedicated sidebar and adds folder related improvements",
     authors: [Devs.juby, Devs.AutumnVN, Devs.Nuckyz],
+    isModified: true,
     tags: ["Organisation", "Servers", "Appearance"],
     settings,
 
@@ -154,7 +153,7 @@ export default definePlugin({
                 // Create the isBetterFolders and betterFoldersExpandedIds variables in the GuildsBar component
                 // Needed because we access this from a non-arrow closure so we can't use arguments[0]
                 {
-                    match: /{disableAppDownload:\i=\i\.isPlatformEmbedded,isOverlay:.+?(?=}=\i)/,
+                    match: /let{disableAppDownload:\i=\i\.isPlatformEmbedded,isOverlay:.+?(?=}=\i)/,
                     replace: "$&,isBetterFolders,betterFoldersExpandedIds"
                 },
                 // Export the isBetterFolders and betterFoldersExpandedIds variable to the Guild List component
@@ -218,7 +217,7 @@ export default definePlugin({
                 // If we are rendering the normal GuildsBar sidebar, we make Discord think the folder is always collapsed to show better icons (the mini guild icons) and avoid transitions
                 {
                     predicate: () => settings.store.keepIcons,
-                    match: /{folderNode:\i,setNodeRef:\i,.+?expanded:(\i),.+?;(?=let)/,
+                    match: /let ?(?:\i,)*?{folderNode:\i,setNodeRef:\i,.+?expanded:(\i),.+?;(?=let)/,
                     replace: (m, isExpanded) => `${m}${isExpanded}=!!arguments[0]?.isBetterFolders&&${isExpanded};`
                 },
                 // Disable expanding and collapsing folders transition in the normal GuildsBar sidebar
@@ -262,14 +261,9 @@ export default definePlugin({
                     replace: (m, conditions, props) => `${m},${conditions}$self.FolderSideBar(${props})`
                 },
                 {
-                    // Add grid styles to fix aligment with other visual refresh elements
+                    // Add grid styles to fix alignment with other visual refresh elements
                     match: /(?<=className:)\i\.\i(?=,"data-fullscreen")/,
                     replace: `"${GRID_STYLE_NAME} "+$&`
-                },
-                {
-                    // Channels resize slider uses hardcoded offset which is wrong when the Better Folders sidebar is opened
-                    match: /(?<="aria-valuemax":\d+,className:\i\.\i,onClick:\i,onMouseDown:)(\i)/,
-                    replace: "vcEvent=>$1($self.fixChannelsResizeSliderOffset(vcEvent))"
                 }
             ]
         },
@@ -294,12 +288,10 @@ export default definePlugin({
                 const guildFolder = getGuildFolder(data.guildId);
 
                 if (guildFolder?.folderId) {
-                    const wasExpanded = ExpandedGuildFolderStore.isFolderExpanded(guildFolder.folderId);
-
-                    if (settings.store.forceOpen && !wasExpanded) {
+                    if (settings.store.forceOpen && !ExpandedGuildFolderStore.isFolderExpanded(guildFolder.folderId)) {
                         FolderUtils.toggleGuildFolderExpand(guildFolder.folderId);
                     }
-                    if (settings.store.closeServerFolder && wasExpanded) {
+                    if (settings.store.closeServerFolder && ExpandedGuildFolderStore.isFolderExpanded(guildFolder.folderId)) {
                         FolderUtils.toggleGuildFolderExpand(guildFolder.folderId);
                     }
                 } else if (settings.store.closeAllFolders) {
@@ -332,7 +324,6 @@ export default definePlugin({
 
     FolderSideBar,
     closeFolders,
-
 
     wrapGuildNodeComponent(node: any, originalComponent: () => ReactNode, isBetterFolders: boolean, expandedFolderIds?: Set<any>) {
         if (
@@ -401,17 +392,6 @@ export default definePlugin({
             default:
                 return true;
         }
-    },
-
-    fixChannelsResizeSliderOffset(event: MouseEvent) {
-        const betterFoldersSidebar = document.querySelector<HTMLElement>(".vc-betterFolders-sidebar");
-
-        if (betterFoldersSidebar != null) {
-            // @ts-expect-error Readonly, but browser doesn't care
-            event.screenX += sidebar.offsetWidth;
-        }
-
-        return event;
     },
 
     shouldShowTransition(props: any) {

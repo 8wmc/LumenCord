@@ -8,17 +8,15 @@ export interface UserAndActivity {
 
 export type DiscordPlatform = "desktop" | "mobile" | "web" | "embedded" | "vr";
 
-export type ClientStatusMap = Partial<Record<DiscordPlatform, OnlineStatus>>;
-
 export interface PresenceStoreState {
-    presencesForGuilds: Record<string, Record<string, { status: OnlineStatus; activities: Activity[]; clientStatus: ClientStatusMap; }>>;
+    presencesForGuilds: Record<string, Record<string, { status: OnlineStatus; activities: Activity[]; clientStatus: Partial<Record<DiscordPlatform, OnlineStatus>>; }>>;
     statuses: Record<string, OnlineStatus>;
     activities: Record<string, Activity[]>;
     filteredActivities: Record<string, Activity[]>;
     hiddenActivities: Record<string, Activity[]>;
     // TODO: finish typing
     activityMetadata: Record<string, any>;
-    clientStatuses: Record<string, ClientStatusMap>;
+    clientStatuses: Record<string, Partial<Record<DiscordPlatform, OnlineStatus>>>;
 }
 
 export class PresenceStore extends FluxStore {
@@ -28,8 +26,8 @@ export class PresenceStore extends FluxStore {
     getActivityMetadata(userId: string): any;
     getAllApplicationActivities(applicationId: string): UserAndActivity[];
     getApplicationActivity(userId: string, applicationId: string, guildId?: string): Activity | null;
-    getClientStatus(userId: string): ClientStatusMap;
-    getHiddenActivities(userId: string, guildId?: string | null): Activity[];
+    getClientStatus(userId: string): Record<DiscordPlatform, OnlineStatus>;
+    getHiddenActivities(): Activity[];
     /** literally just getActivities(...)[0] */
     getPrimaryActivity(userId: string, guildId?: string): Activity | null;
     getState(): PresenceStoreState;
@@ -37,6 +35,4 @@ export class PresenceStore extends FluxStore {
     getUnfilteredActivities(userId: string, guildId?: string): Activity[];
     getUserIds(): string[];
     isMobileOnline(userId: string): boolean;
-    isVROnline(userId: string): boolean;
-    setCurrentUserOnConnectionOpen(status: OnlineStatus, activities: Activity[]): void;
 }

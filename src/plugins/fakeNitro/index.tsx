@@ -27,7 +27,7 @@ import definePlugin, { OptionType } from "@utils/types";
 import type { Emoji, Message, RenderModalProps, Sticker } from "@vencord/discord-types";
 import { StickerFormatType } from "@vencord/discord-types/enums";
 import { findByCodeLazy, findByPropsLazy, proxyLazyWebpack } from "@webpack";
-import { ChannelStore, ConfirmModal, DraftType, EmojiStore, FluxDispatcher, GuildMemberStore, IconUtils, openModal, PermissionsBits, PermissionStore, StickersStore, UploadHandler, UserSettingsActionCreators, UserSettingsProtoStore, UserStore } from "@webpack/common";
+import { ChannelStore, ConfirmModal, DraftType, EmojiStore, FluxDispatcher, GuildMemberStore, IconUtils, lodash, openModal, OverridePremiumTypeStore, Parser, PermissionsBits, PermissionStore, StickersStore, UploadHandler, UserSettingsActionCreators, UserSettingsProtoStore } from "@webpack/common";
 import { applyPalette, GIFEncoder, quantize } from "gifenc";
 import type { ReactElement, ReactNode } from "react";
 
@@ -40,8 +40,6 @@ function searchProtoClassField(localName: string, protoClass: any) {
     const fieldGetter = Object.values(field).find(value => typeof value === "function") as any;
     return fieldGetter?.();
 }
-
-const logger = new Logger("FakeNitro");
 
 const PreloadedUserSettingsActionCreators = proxyLazyWebpack(() => UserSettingsActionCreators.PreloadedUserSettingsActionCreators);
 const AppearanceSettingsActionCreators = proxyLazyWebpack(() => searchProtoClassField("appearance", PreloadedUserSettingsActionCreators.ProtoClass));
@@ -75,7 +73,6 @@ const fakeNitroEmojiRegex = /\/emojis\/(\d+?)\.(png|webp|gif)/;
 const fakeNitroStickerRegex = /\/stickers\/(\d+?)\./;
 const fakeNitroGifStickerRegex = /\/attachments\/\d+?\/\d+?\/(\d+?)\.gif/;
 const hyperLinkRegex = /\[.+?\]\((https?:\/\/.+?)\)/;
-const hyperLinkOnlyRegex = new RegExp(`^${hyperLinkRegex.source}$`);
 const mediaSizes = [16, 32, 48, 56, 64, 96, 128, 160, 256, 512, 1024];
 
 const DEFAULT_EMOJI_SIZE = 48;
@@ -135,8 +132,13 @@ const settings = definePluginSettings({
         default: true,
         restartNeeded: true
     },
-    useHyperLinks: {
-        description: "Whether to use hyperlinks when sending fake emojis and stickers",
+    useStickerHyperLinks: {
+        description: "Whether to use hyperlinks when sending fake stickers",
+        type: OptionType.BOOLEAN,
+        default: true
+    },
+    useEmojiHyperLinks: {
+        description: "Whether to use hyperlinks when sending fake emojis",
         type: OptionType.BOOLEAN,
         default: true
     },
@@ -149,7 +151,7 @@ const settings = definePluginSettings({
         description: "Whether to disable the embed permission check when sending fake emojis and stickers",
         type: OptionType.BOOLEAN,
         default: false
-    }
+    },
 });
 
 function hasPermission(channelId: string, permission: bigint) {
@@ -263,8 +265,8 @@ export default definePlugin({
                 },
                 {
                     // Disallow the emoji for premium locked if the intention doesn't allow it
-                    match: /(?<=!\(\i\|\|)\i\.\i\.canUseEmojisEverywhere\(\i\)/,
-                    replace: check => `(${check}||${IS_BYPASSEABLE_INTENTION})`
+                    match: /!(\i\.\i\.canUseEmojisEverywhere\(\i\))/,
+                    replace: m => `(${m}&&!${IS_BYPASSEABLE_INTENTION})`
                 },
                 {
                     // Allow animated emojis to be used if the intention allows it
@@ -277,8 +279,7 @@ export default definePlugin({
         {
             find: ".getUserIsAdmin(",
             replacement: {
-                // FIXME: Stable compat: (?: \i)?
-                match: /(function(?: \i)?\(\i,\i)\){(.{0,250}.getUserIsAdmin\(.+?return!1})/,
+                match: /(function \i\(\i,\i)\){(.{0,250}.getUserIsAdmin\(.+?return!1})/,
                 replace: (_, rest1, rest2) => `${rest1},fakeNitroOriginal){if(!fakeNitroOriginal)return false;${rest2}`
             }
         },
@@ -319,14 +320,13 @@ export default definePlugin({
         {
             find: ",updateTheme(",
             replacement: {
-                // FIXME: Stable compat: (?: \i)?
-                match: /(function(?: \i)?\(\i\){let{backgroundGradientPresetId:(\i).+?)(\i\.\i\.updateAsync.+?theme=(.+?),.+?},\i\))/,
+                match: /(function \i\(\i\){let{backgroundGradientPresetId:(\i).+?)(\i\.\i\.updateAsync.+?theme=(.+?),.+?},\i\))/,
                 replace: (_, rest, backgroundGradientPresetId, originalCall, theme) => `${rest}$self.handleGradientThemeSelect(${backgroundGradientPresetId},${theme},()=>${originalCall});`
             }
         },
         // Allow users to use custom client themes
         {
-            find: ".CLIENT_THEMES_EDITOR?",
+            find: '("custom_themes_editor_footer")',
             replacement: {
                 match: /(?<=\i=)\(0,\i\.\i\)\(\i\.\i\.TIER_2\)(?=,|;)/g,
                 replace: "true"
@@ -334,11 +334,20 @@ export default definePlugin({
         },
         {
             find: '["strong","em","u","text","inlineCode","s","spoiler"]',
-            predicate: () => settings.store.transformEmojis || settings.store.transformStickers,
-            replacement: {
-                match: /\(\{ast:(\i)(?=,inline:\i)/,
-                replace: "({ast:$self.transformAst($1)"
-            }
+            replacement: [
+                {
+                    // Call our function to decide whether the emoji link should be kept or not
+                    predicate: () => settings.store.transformEmojis,
+                    match: /1!==(\i)\.length\|\|1!==\i\.length/,
+                    replace: (m, content) => `${m}||$self.shouldKeepEmojiLink(${content}[0])`
+                },
+                {
+                    // Patch the rendered message content to add fake nitro emojis or remove sticker links
+                    predicate: () => settings.store.transformEmojis || settings.store.transformStickers,
+                    match: /(?=return{hasSpoilerEmbeds:\i,hasBailedAst:\i,content:(\i))/,
+                    replace: (_, content) => `${content}=$self.patchFakeNitroEmojisOrRemoveStickersLinks(${content},arguments[2]?.formatInline);`
+                }
+            ]
         },
         {
             find: "}renderStickersAccessories(",
@@ -412,7 +421,7 @@ export default definePlugin({
                 match: /(?<=type:"(?:SOUNDBOARD_SOUNDS_RECEIVED|GUILD_SOUNDBOARD_SOUND_CREATE|GUILD_SOUNDBOARD_SOUND_UPDATE|GUILD_SOUNDBOARD_SOUNDS_UPDATE)".+?available:)\i\.available/g,
                 replace: "true"
             }
-        }
+        },
     ],
 
     get guildId() {
@@ -420,18 +429,17 @@ export default definePlugin({
     },
 
     get canUseEmotes() {
-        return (UserStore.getCurrentUser().premiumType ?? 0) > 0;
+        return (OverridePremiumTypeStore.getState().premiumTypeActual ?? 0) > 0;
     },
 
     get canUseStickers() {
-        return (UserStore.getCurrentUser().premiumType ?? 0) > 1;
+        return (OverridePremiumTypeStore.getState().premiumTypeActual ?? 0) > 1;
     },
 
     handleProtoChange(proto: any, user: any) {
         try {
             if (proto == null || typeof proto === "string") return;
-
-            const premiumType: number = user?.premium_type ?? UserStore?.getCurrentUser()?.premiumType ?? 0;
+            const premiumType = OverridePremiumTypeStore.getState().premiumTypeActual ?? 0;
 
             if (premiumType !== 2) {
                 proto.appearance ??= AppearanceSettingsActionCreators.create();
@@ -452,7 +460,7 @@ export default definePlugin({
     },
 
     handleGradientThemeSelect(backgroundGradientPresetId: number | undefined, theme: number, original: () => void) {
-        const premiumType = UserStore?.getCurrentUser()?.premiumType ?? 0;
+        const premiumType = OverridePremiumTypeStore.getState().premiumTypeActual ?? 0;
         if (premiumType === 2 || backgroundGradientPresetId == null) return original();
 
         if (!PreloadedUserSettingsActionCreators || !AppearanceSettingsActionCreators || !ClientThemeSettingsActionsCreators || !BINARY_READ_OPTIONS) return;
@@ -517,58 +525,107 @@ export default definePlugin({
         if (!Array.isArray(child.props.children)) child.props.children = [child.props.children];
     },
 
-    transformAst(ast: any[]) {
-        try {
-            if (!settings.store.transformCompoundSentence && ast.length > 1) {
-                return ast;
-            }
-            // Filter out sticker links. These are transformed into actual stickers later, so we don't want duplicate links
-            if (settings.store.transformStickers) {
-                ast = ast.filter(node => {
-                    const { type, target } = node;
+    patchFakeNitroEmojisOrRemoveStickersLinks(content: Array<any>, inline: boolean) {
+        // If content has more than one child or it's a single ReactElement like a header, list or span
+        if ((content.length > 1 || typeof content[0]?.type === "string") && !settings.store.transformCompoundSentence) return content;
 
-                    if (type !== "link") return true;
-                    if (fakeNitroStickerRegex.test(target)) return false;
+        let nextIndex = content.length;
 
-                    const gifStickerLinkMatch = target.match(fakeNitroGifStickerRegex);
-                    const isGifStickerLink = gifStickerLinkMatch && StickersStore.getStickerById(gifStickerLinkMatch[1]);
-
-                    return !isGifStickerLink;
-                });
-            }
-
+        const transformLinkChild = (child: ReactElement<any>) => {
             if (settings.store.transformEmojis) {
-                ast = ast.map(node => {
-                    const { type, target } = node;
-
-                    if (type !== "link") return node;
-
-                    const fakeNitroMatch = target.match(fakeNitroEmojiRegex);
-                    if (!fakeNitroMatch) return node;
-
+                const fakeNitroMatch = child.props.href.match(fakeNitroEmojiRegex);
+                if (fakeNitroMatch) {
                     let url: URL | null = null;
                     try {
-                        url = new URL(target);
+                        url = new URL(child.props.href);
                     } catch { }
 
-                    const emojiId = fakeNitroMatch[1];
-                    const emojiName = EmojiStore.getCustomEmojiById(emojiId)?.name ?? url?.searchParams.get("name") ?? "FakeNitroEmoji";
-                    const animated = fakeNitroMatch[2] === "gif" || url?.searchParams.get("animated") === "true";
+                    const emojiName = EmojiStore.getCustomEmojiById(fakeNitroMatch[1])?.name ?? url?.searchParams.get("name") ?? "FakeNitroEmoji";
+                    const isAnimated = fakeNitroMatch[2] === "gif" || url?.searchParams.get("animated") === "true";
 
-                    return {
-                        animated,
-                        emojiId,
-                        name: `:${emojiName}:`,
-                        type: "customEmoji",
+                    return Parser.defaultRules.customEmoji.react({
+                        jumboable: !inline && content.length === 1 && typeof content[0].type !== "string",
+                        animated: isAnimated,
+                        emojiId: fakeNitroMatch[1],
+                        name: emojiName,
                         fake: true
-                    };
-                });
+                    }, void 0, { key: String(nextIndex++) });
+                }
             }
-        } catch (e) {
-            logger.error("Error transforming AST:", e);
-        }
 
-        return ast;
+            if (settings.store.transformStickers) {
+                if (fakeNitroStickerRegex.test(child.props.href)) return null;
+
+                const gifMatch = child.props.href.match(fakeNitroGifStickerRegex);
+                if (gifMatch) {
+                    // There is no way to differentiate a regular gif attachment from a fake nitro animated sticker, so we check if the StickersStore contains the id of the fake sticker
+                    if (StickersStore.getStickerById(gifMatch[1])) return null;
+                }
+            }
+
+            return child;
+        };
+
+        const transformChild = (child: ReactElement<any>) => {
+            if (child?.props?.trusted != null) return transformLinkChild(child);
+            if (child?.props?.children != null) {
+                if (!Array.isArray(child.props.children)) {
+                    child.props.children = modifyChild(child.props.children);
+                    return child;
+                }
+
+                child.props.children = modifyChildren(child.props.children);
+                if (child.props.children.length === 0) return null;
+                return child;
+            }
+
+            return child;
+        };
+
+        const modifyChild = (child: ReactElement<any>) => {
+            const newChild = transformChild(child);
+
+            if (newChild?.type === "ul" || newChild?.type === "ol") {
+                this.ensureChildrenIsArray(newChild);
+                if (newChild.props.children.length === 0) return null;
+
+                let listHasAnItem = false;
+                for (const [index, child] of newChild.props.children.entries()) {
+                    if (child == null) {
+                        delete newChild.props.children[index];
+                        continue;
+                    }
+
+                    this.ensureChildrenIsArray(child);
+                    if (child.props.children.length > 0) listHasAnItem = true;
+                    else delete newChild.props.children[index];
+                }
+
+                if (!listHasAnItem) return null;
+
+                newChild.props.children = this.clearEmptyArrayItems(newChild.props.children);
+            }
+
+            return newChild;
+        };
+
+        const modifyChildren = (children: Array<ReactElement<any>>) => {
+            for (const [index, child] of children.entries()) children[index] = modifyChild(child);
+
+            children = this.clearEmptyArrayItems(children);
+
+            return children;
+        };
+
+        try {
+            const newContent = modifyChildren(lodash.cloneDeep(content));
+            this.trimContent(newContent);
+
+            return newContent;
+        } catch (err) {
+            new Logger("FakeNitro").error(err);
+            return content;
+        }
     },
 
     patchFakeNitroStickers(stickers: Array<any>, message: Message) {
@@ -577,7 +634,6 @@ export default definePlugin({
         const contentItems = message.content.split(/\s/);
         if (settings.store.transformCompoundSentence) itemsToMaybePush.push(...contentItems);
         else if (contentItems.length === 1) itemsToMaybePush.push(contentItems[0]);
-        else if (hyperLinkOnlyRegex.test(message.content)) itemsToMaybePush.push(message.content);
 
         itemsToMaybePush.push(...message.attachments.filter(attachment => attachment.content_type === "image/gif").map(attachment => attachment.url));
 
@@ -622,7 +678,7 @@ export default definePlugin({
     shouldIgnoreEmbed(embed: Message["embeds"][number], message: Message) {
         try {
             const contentItems = message.content.split(/\s/);
-            if (contentItems.length > 1 && !settings.store.transformCompoundSentence && !hyperLinkOnlyRegex.test(message.content)) return false;
+            if (contentItems.length > 1 && !settings.store.transformCompoundSentence) return false;
 
             switch (embed.type) {
                 case "image": {
@@ -631,7 +687,6 @@ export default definePlugin({
                     if (
                         !settings.store.transformCompoundSentence
                         && !contentItems.some(item => item === url || item.match(hyperLinkRegex)?.[1] === url)
-                        && !hyperLinkOnlyRegex.test(message.content)
                     ) return false;
 
                     if (settings.store.transformEmojis) {
@@ -670,6 +725,10 @@ export default definePlugin({
 
             return true;
         });
+    },
+
+    shouldKeepEmojiLink(link: any) {
+        return link.target && fakeNitroEmojiRegex.test(link.target);
     },
 
     addFakeNotice(type: FakeNoticeType, node: Array<ReactNode>, fake: boolean) {
@@ -832,7 +891,7 @@ export default definePlugin({
 
                     const linkText = s.hyperLinkText.replaceAll("{{NAME}}", sticker.name);
 
-                    messageObj.content += `${getWordBoundary(messageObj.content, messageObj.content.length - 1)}${s.useHyperLinks ? `[${linkText}](${url})` : url}`;
+                    messageObj.content += `${getWordBoundary(messageObj.content, messageObj.content.length - 1)}${s.useStickerHyperLinks ? `[${linkText}](${url})` : url}`;
                     options.stickerIds!.length = 0;
                 }
             }
@@ -851,10 +910,12 @@ export default definePlugin({
                     url.searchParams.set("name", emoji.name);
                     url.searchParams.set("lossless", "true");
 
+                    if (emoji.animated) url.pathname = url.pathname.replace(".webp", ".gif");
+
                     const linkText = s.hyperLinkText.replaceAll("{{NAME}}", emoji.name);
 
                     messageObj.content = messageObj.content.replace(emojiString, (match, offset, origStr) => {
-                        return `${getWordBoundary(origStr, offset - 1)}${s.useHyperLinks ? `[${linkText}](${url})` : url}${getWordBoundary(origStr, offset + match.length)}`;
+                        return `${getWordBoundary(origStr, offset - 1)}${s.useEmojiHyperLinks ? `[${linkText}](${url})` : url}${getWordBoundary(origStr, offset + match.length)}`;
                     });
                 }
             }
@@ -889,7 +950,7 @@ export default definePlugin({
 
                 const linkText = s.hyperLinkText.replaceAll("{{NAME}}", emoji.name);
 
-                return `${getWordBoundary(origStr, offset - 1)}${s.useHyperLinks ? `[${linkText}](${url})` : url}${getWordBoundary(origStr, offset + emojiStr.length)}`;
+                return `${getWordBoundary(origStr, offset - 1)}${s.useEmojiHyperLinks ? `[${linkText}](${url})` : url}${getWordBoundary(origStr, offset + emojiStr.length)}`;
             });
 
             if (hasBypass && !s.disableEmbedPermissionCheck && !hasEmbedPerms(channelId)) {

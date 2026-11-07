@@ -25,7 +25,7 @@ import { OptionType } from "@utils/types";
 import { shiki } from "./api/shiki";
 import { themes } from "./api/themes";
 import deviconStyle from "./devicon.css?managed";
-import { DeviconSetting, HighlighterSetting } from "./types";
+import { DeviconSetting, HljsSetting } from "./types";
 
 const themeNames = Object.keys(themes) as (keyof typeof themes)[];
 
@@ -49,27 +49,27 @@ export const settings = definePluginSettings({
             shiki.setTheme(value || settings.store.theme);
         },
     },
-    tryDiscordHighlighter: {
+    tryHljs: {
         type: OptionType.SELECT,
-        displayName: "Try Discord's highlighter",
+        displayName: "Try Highlight.js",
         description: "Use the more lightweight default Discord highlighter and theme.",
         options: [
             {
                 label: "Never",
-                value: HighlighterSetting.Never,
+                value: HljsSetting.Never,
             },
             {
-                label: "Prefer Shiki instead of Discord's highlighter",
-                value: HighlighterSetting.Secondary,
+                label: "Prefer Shiki instead of Highlight.js",
+                value: HljsSetting.Secondary,
                 default: true,
             },
             {
-                label: "Prefer Discord's highlighter instead of Shiki",
-                value: HighlighterSetting.Primary,
+                label: "Prefer Highlight.js instead of Shiki",
+                value: HljsSetting.Primary,
             },
             {
                 label: "Always",
-                value: HighlighterSetting.Always,
+                value: HljsSetting.Always,
             },
         ],
     },

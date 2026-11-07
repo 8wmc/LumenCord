@@ -12,11 +12,38 @@ import { classes } from "@utils/misc";
 import { IconComponent } from "@utils/types";
 import { Channel } from "@vencord/discord-types";
 import { findCssClassesLazy } from "@webpack";
-import { Clickable, Menu, Tooltip } from "@webpack/common";
-import { HTMLProps, JSX, MouseEventHandler, ReactNode } from "react";
+import { Clickable, Tooltip, useEffect, useState, Popout, useRef, React } from "@webpack/common";
+import type { HTMLProps, JSX, MouseEventHandler, ReactNode } from "react";
 
-import { addContextMenuPatch, findGroupChildrenByChildId } from "./ContextMenu";
+import { addCompactListener, addStealthListener, isCompactModeEnabled, isStealthModeEnabled, removeCompactListener, removeStealthListener, toggleCompactMode } from "./HeaderBar";
 import { useSettings } from "./Settings";
+
+let _ChatPluginContext: React.Context<string | null> | null = null;
+export function getChatPluginContext() {
+    if (!_ChatPluginContext && React?.createContext) {
+        _ChatPluginContext = React.createContext<string | null>(null);
+    }
+    return _ChatPluginContext;
+}
+
+function openPluginSettingsModal(id?: string | null) {
+    if (!id) return;
+    try {
+        const { openPluginModal } = require("@components/settings/tabs/plugins/PluginModal");
+        const pluginModule = require("~plugins");
+        const allPlugins = pluginModule.default ?? pluginModule;
+        const plugin =
+            allPlugins[id] ??
+            allPlugins[id.toLowerCase()] ??
+            allPlugins[id.charAt(0).toUpperCase() + id.slice(1)] ??
+            Object.values(allPlugins).find((p: any) => p?.name?.toLowerCase() === id.toLowerCase());
+        if (plugin) {
+            openPluginModal(plugin);
+        }
+    } catch (e) {
+        console.error("Failed to open plugin settings modal:", e);
+    }
+}
 
 const ButtonWrapperClasses = findCssClassesLazy("button", "buttonWrapper", "notificationDot");
 const ChannelTextAreaClasses = findCssClassesLazy("buttonContainer", "channelTextArea", "button");
@@ -95,25 +122,83 @@ export type ChatBarButtonData = {
 export const ChatBarButtonMap = new Map<string, ChatBarButtonData>();
 const logger = new Logger("ChatButtons");
 
+/**
+ * Set of button IDs hidden by the Backpack plugin.
+ * Buttons in this set are rendered inside the Backpack popout instead of the main bar.
+ */
+export const BackpackedButtons = new Set<string>();
+export const backpackListeners = new Set<() => void>();
+export function notifyBackpackChange() { backpackListeners.forEach(l => l()); }
+
 function VencordChatBarButtons(props: ChatBarProps) {
     const { chatBarButtons } = useSettings(["uiElements.chatBarButtons.*"]).uiElements;
+    const [, forceUpdate] = useState(0);
+
+    useEffect(() => {
+        const listener = () => forceUpdate(n => n + 1);
+        addStealthListener(listener);
+        addCompactListener(listener);
+        window.addEventListener("nightcord-stealth-change", listener);
+        window.addEventListener("nightcord-compact-change", listener);
+        backpackListeners.add(listener);
+        return () => {
+            removeStealthListener(listener);
+            removeCompactListener(listener);
+            window.removeEventListener("nightcord-stealth-change", listener);
+            window.removeEventListener("nightcord-compact-change", listener);
+            backpackListeners.delete(listener);
+        };
+    }, []);
+
+    if (isStealthModeEnabled()) return null;
+
+    if (isCompactModeEnabled()) {
+        return (
+            <div className="vc-chat-bar-btns" style={{ display: "contents" }}>
+                <CompactChatBarToggle chatBarProps={props} />
+            </div>
+        );
+    }
 
     const { analyticsName } = props.type;
+    const ChatPluginContext = getChatPluginContext();
     return (
-        <>
+        <div className="vc-chat-bar-btns" style={{ display: "contents" }}>
             {Array.from(ChatBarButtonMap)
-                .filter(([key]) => chatBarButtons[key]?.enabled !== false)
-                .map(([key, { render: Button }]) => (
-                    <ErrorBoundary noop key={key} onError={e => logger.error(`Failed to render ${key}`, e.error)}>
-                        <Button {...props} isMainChat={analyticsName === "normal"} isAnyChat={["normal", "sidebar"].includes(analyticsName)} />
-                    </ErrorBoundary>
-                ))}
-        </>
+                .filter(([key]) => chatBarButtons[key]?.enabled !== false && !BackpackedButtons.has(key))
+                .sort(([a], [b]) => (a === "Backpack" ? -1 : b === "Backpack" ? 1 : 0))
+                .map(([key, { render: Button }]) => {
+                    const content = (
+                        <div
+                            style={{ display: "contents" }}
+                            onContextMenu={e => {
+                                if (e.defaultPrevented) return;
+                                if (key.toLowerCase() === "translate" || key.toLowerCase() === "floodpanel") return;
+                                e.preventDefault();
+                                openPluginSettingsModal(key);
+                            }}
+                        >
+                            <ErrorBoundary noop onError={e => logger.error(`Failed to render ${key}`, e.error)}>
+                                <Button {...props} isMainChat={analyticsName === "normal"} isAnyChat={["normal", "sidebar"].includes(analyticsName)} />
+                            </ErrorBoundary>
+                        </div>
+                    );
+                    return ChatPluginContext ? (
+                        <ChatPluginContext.Provider value={key} key={key}>
+                            {content}
+                        </ChatPluginContext.Provider>
+                    ) : (
+                        <React.Fragment key={key}>{content}</React.Fragment>
+                    );
+                })}
+        </div>
     );
 }
 
 export function _injectButtons(buttons: ReactNode[], props: ChatBarProps) {
     if (props.disabled || buttons.length === 0) return;
+    // Guard: don't inject if already present (patch may fire in multiple bundle modules)
+    if ((buttons as any[]).some((b: any) => b?.key === "vencord-chat-buttons")) return;
 
     buttons.unshift(<VencordChatBarButtons key="vencord-chat-buttons" {...props} />);
 }
@@ -135,17 +220,36 @@ export interface ChatBarButtonProps {
 }
 
 export const ChatBarButton = ErrorBoundary.wrap((props: ChatBarButtonProps) => {
+    const ChatPluginContext = getChatPluginContext();
+    const pluginKey = ChatPluginContext ? React.useContext(ChatPluginContext) : null;
+
+    const handleContextMenu = (e: React.MouseEvent) => {
+        if (props.onContextMenu) {
+            props.onContextMenu(e);
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
+        if (pluginKey?.toLowerCase() === "translate" || pluginKey?.toLowerCase() === "floodpanel") {
+            return;
+        }
+        if (!e.defaultPrevented && pluginKey) {
+            e.preventDefault();
+            openPluginSettingsModal(pluginKey);
+        }
+    };
+
     return (
         <Tooltip text={props.tooltip}>
             {({ onMouseEnter, onMouseLeave }) => (
-                <div className={`expression-picker-chat-input-button ${ChannelTextAreaClasses?.buttonContainer ?? ""} vc-chatbar-button`}>
+                <div className={`expression-picker-chat-input-button ${ChannelTextAreaClasses?.buttonContainer ?? ""}`}>
                     <Clickable
                         aria-label={props.tooltip}
                         onMouseEnter={onMouseEnter}
                         onMouseLeave={onMouseLeave}
                         className={classes(ButtonWrapperClasses.button, ChannelTextAreaClasses?.button)}
                         onClick={props.onClick}
-                        onContextMenu={props.onContextMenu}
+                        onContextMenu={handleContextMenu}
                         onAuxClick={props.onAuxClick}
                         {...props.buttonProps}
                     >
@@ -159,34 +263,120 @@ export const ChatBarButton = ErrorBoundary.wrap((props: ChatBarButtonProps) => {
     );
 }, { noop: true });
 
-addContextMenuPatch("textarea-context", (children, args) => {
+/* Vencord Buttons context menu removed — managed by Backpack plugin */
+
+export type ChatBarButtonWrapper = (buttons: ReactNode) => ReactNode;
+
+export interface ChatBarButtonWrapperData {
+    wrapper: ChatBarButtonWrapper;
+    priority: number;
+}
+
+/**
+ * Registry for plugins that need to wrap the entire chat bar button container.
+ * Wrappers are applied in ascending priority order (lower number = outermost wrapper).
+ */
+export const ChatBarButtonWrappers = new Map<string, ChatBarButtonWrapperData>();
+
+export const addChatBarButtonWrapper = (id: string, wrapper: ChatBarButtonWrapper, priority: number = 0) => ChatBarButtonWrappers.set(id, { wrapper, priority });
+export const removeChatBarButtonWrapper = (id: string) => ChatBarButtonWrappers.delete(id);
+
+export function _wrapButtons(buttons: ReactNode) {
+    if (!buttons) return buttons;
+    const sorted = [...ChatBarButtonWrappers.values()]
+        .sort((a, b) => a.priority - b.priority);
+
+    let wrapped = buttons;
+    for (const { wrapper } of sorted) {
+        wrapped = wrapper(wrapped);
+    }
+    return wrapped;
+}
+
+function CompactChatPopout({ chatBarProps, closePopout }: any) {
     const { chatBarButtons } = useSettings(["uiElements.chatBarButtons.*"]).uiElements;
-
-    const buttons = Array.from(ChatBarButtonMap.entries());
-    if (!buttons.length) return;
-
-    const group = findGroupChildrenByChildId("submit-button", children);
-    if (!group) return;
-
-    const idx = group.findIndex(c => c?.props?.id === "submit-button");
-    if (idx === -1) return;
-
-    group.splice(idx, 0,
-        <Menu.MenuItem id="vc-chat-buttons" key="vencord-chat-buttons" label="Vencord Buttons">
-            {buttons.map(([id]) => (
-                <Menu.MenuCheckboxItem
-                    label={id}
-                    key={id}
-                    id={`vc-chat-button-${id}`}
-                    checked={chatBarButtons[id]?.enabled !== false}
-                    action={() => {
-                        const wasEnabled = chatBarButtons[id]?.enabled !== false;
-
-                        chatBarButtons[id] ??= {} as any;
-                        chatBarButtons[id].enabled = !wasEnabled;
-                    }}
-                />
-            ))}
-        </Menu.MenuItem>
+    const { analyticsName } = chatBarProps.type;
+    const ChatPluginContext = getChatPluginContext();
+    return (
+        <div className="compact-popout-container">
+            <div className="compact-popout-grid">
+                {Array.from(ChatBarButtonMap)
+                    .filter(([key]) => key !== "Backpack" && chatBarButtons[key]?.enabled !== false)
+                    .map(([key, { render: Button }]) => {
+                        const content = (
+                            <div
+                                style={{ display: "contents" }}
+                                onClick={closePopout}
+                                onContextMenu={e => {
+                                    if (e.defaultPrevented) return;
+                                    if (key.toLowerCase() === "translate") return;
+                                    e.preventDefault();
+                                    openPluginSettingsModal(key);
+                                }}
+                            >
+                                <ErrorBoundary noop>
+                                    <Button {...chatBarProps} isMainChat={analyticsName === "normal"} isAnyChat={["normal", "sidebar"].includes(analyticsName)} />
+                                </ErrorBoundary>
+                            </div>
+                        );
+                        return ChatPluginContext ? (
+                            <ChatPluginContext.Provider value={key} key={key}>
+                                {content}
+                            </ChatPluginContext.Provider>
+                        ) : (
+                            <React.Fragment key={key}>{content}</React.Fragment>
+                        );
+                    })}
+            </div>
+            <div className="compact-popout-divider" />
+            <div className="compact-popout-disable" onClick={() => { toggleCompactMode(); closePopout(); }}>
+                Disable Compact Mode
+            </div>
+        </div>
     );
-});
+}
+
+function CompactChatBarToggle({ chatBarProps }: any) {
+    const [, forceUpdate] = useState(0);
+    const [isOpen, setIsOpen] = useState(false);
+    const popoutRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const listener = () => forceUpdate(n => n + 1);
+        addCompactListener(listener);
+        window.addEventListener("nightcord-compact-change", listener);
+        return () => {
+            removeCompactListener(listener);
+            window.removeEventListener("nightcord-compact-change", listener);
+        };
+    }, []);
+
+    const GridIcon = () => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 3h7v7H3V3zm0 11h7v7H3v-7zm11-11h7v7h-7V3zm0 11h7v7h-7v-7z" />
+        </svg>
+    );
+
+    return (
+        <Popout
+            targetElementRef={popoutRef}
+            renderPopout={() => <CompactChatPopout chatBarProps={chatBarProps} closePopout={() => setIsOpen(false)} />}
+            shouldShow={isOpen}
+            onRequestClose={() => setIsOpen(false)}
+            position="top"
+            align="right"
+            spacing={8}
+        >
+            {() => (
+                <div ref={popoutRef as any} style={{ display: "flex", alignItems: "center" }}>
+                    <ChatBarButton
+                        tooltip="Compact Mode"
+                        onClick={() => setIsOpen(v => !v)}
+                    >
+                        <GridIcon />
+                    </ChatBarButton>
+                </div>
+            )}
+        </Popout>
+    );
+}

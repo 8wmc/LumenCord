@@ -1,0 +1,154 @@
+.vcd-settings-button-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5em;
+    margin-top: 0.5em;
+}
+
+.vcd-settings-title {
+    margin-bottom: 32px;
+}
+
+.vcd-settings-category {
+    display: flex;
+    flex-direction: column;
+}
+
+.vcd-settings-category-title {
+    margin-bottom: 16px;
+}
+
+.vcd-settings-category-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.vcd-settings-category-divider {
+    margin-top: 32px;
+    margin-bottom: 32px;
+}
+
+.vcd-settings-switch {
+    margin-bottom: 0;
+}
+
+.vcd-settings-updater-card {
+    padding: 1em;
+    margin-bottom: 1em;
+    display: grid;
+    gap: 0.5em;
+
+    border-radius: 8px;
+    background-color: var(--bg-secondary);
+    background: var(--background-feedback-warning);
+    border: 1px solid var(--info-warning-foreground);
+    color: var(--text-feedback-warning);
+}
+
+/* arguments */
+
+.vcd-custom-tray-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.vcd-tray-settings {
+    padding: 16px 0;
+}
+
+.vcd-tray-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.vcd-tray-settings-labels {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+/* Blurred API Key inputs and fallbacks */
+.nc-api-key-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.nc-api-key-input-wrapper {
+    flex: 1;
+    width: 100%;
+    position: relative;
+}
+
+.nc-api-key-input-wrapper input {
+    padding-right: 40px !important;
+}
+
+.nc-blurred-api-key input,
+.nc-blurred-api-key textarea,
+input.nc-blurred-api-key {
+    filter: blur(6px) !important;
+    user-select: none !important;
+    transition: filter 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nc-blurred-api-key:hover input,
+.nc-blurred-api-key:focus-within input,
+.nc-blurred-api-key:hover textarea,
+.nc-blurred-api-key:focus-within textarea,
+input.nc-blurred-api-key:hover,
+input.nc-blurred-api-key:focus {
+    filter: blur(0px) !important;
+    user-select: text !important;
+}
+
+.nc-api-key-toggle-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff !important;
+    border-radius: 4px;
+    transition: color 0.15s ease, background-color 0.15s ease;
+    z-index: 2;
+}
+
+.nc-api-key-toggle-btn svg {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+}
+
+.nc-api-key-toggle-btn:hover {
+    color: #ffffff !important;
+    background-color: var(--background-modifier-hover);
+}
+
+.nc-api-key-toggle-btn:active {
+    color: #ffffff !important;
+    background-color: var(--background-modifier-active);
+}
+
+/* Fallback for any other API key inputs in settings */
+input[placeholder*="gsk_"]:not(:hover):not(:focus),
+input[placeholder*="API Key"]:not(:hover):not(:focus),
+input[placeholder*="apiKey"]:not(:hover):not(:focus),
+input[name*="apiKey"]:not(:hover):not(:focus),
+input[name*="api_key"]:not(:hover):not(:focus),
+input[id*="apiKey"]:not(:hover):not(:focus),
+input[id*="api_key"]:not(:hover):not(:focus) {
+    filter: blur(6px);
+    transition: filter 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+

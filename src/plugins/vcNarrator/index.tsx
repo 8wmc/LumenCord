@@ -16,17 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { Button } from "@components/Button";
+import { migrateSettingsFromPlugin } from "@api/Settings";
 import { ErrorCard } from "@components/ErrorCard";
-import { Heading } from "@components/Heading";
+import { HeadingSecondary } from "@components/Heading";
 import { Paragraph } from "@components/Paragraph";
 import { Devs, IS_LINUX } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import { Margins } from "@utils/margins";
-import { classes } from "@utils/misc";
 import { wordsToTitle } from "@utils/text";
 import definePlugin, { ReporterTestable } from "@utils/types";
-import { AuthenticationStore, ChannelStore, GuildMemberStore, SelectedChannelStore, SelectedGuildStore, useMemo, UserStore, VoiceStateStore } from "@webpack/common";
+import { AuthenticationStore, Button, ChannelStore, GuildMemberStore, SelectedChannelStore, SelectedGuildStore, useMemo, UserStore, VoiceStateStore } from "@webpack/common";
 import { ReactElement } from "react";
 
 import { getCurrentVoice, settings } from "./settings";
@@ -79,13 +78,6 @@ function formatText(str: string, user: string, channel: string, displayName: str
         .replaceAll("{{NICKNAME}}", clean(nickname) || (nickname ? "Someone" : ""));
 }
 
-/*
-let StatusMap = {} as Record<string, {
-    mute: boolean;
-    deaf: boolean;
-}>;
-*/
-
 // For every user, channelId and oldChannelId will differ when moving channel.
 // Only for the local user, channelId and oldChannelId will be the same when moving channel,
 // for some ungodly reason
@@ -101,15 +93,7 @@ function getTypeAndChannelId({ channelId, oldChannelId }: VoiceStateChangeEvent,
         if (channelId) return [oldChannelId ? "move" : "join", channelId];
         if (oldChannelId) return ["leave", oldChannelId];
     }
-    /*
-    if (channelId) {
-        if (deaf || selfDeaf) return ["deafen", channelId];
-        if (mute || selfMute) return ["mute", channelId];
-        const oldStatus = StatusMap[userId];
-        if (oldStatus.deaf) return ["undeafen", channelId];
-        if (oldStatus.mute) return ["unmute", channelId];
-    }
-    */
+
     return ["", ""];
 }
 
@@ -157,6 +141,7 @@ function playSample(type: string) {
     ));
 }
 
+migrateSettingsFromPlugin("VcNarrator", "VcNarratorCustom", "enabled");
 export default definePlugin({
     name: "VcNarrator",
     description: "Announces when users join, leave, or move voice channels via narrator",
@@ -260,7 +245,7 @@ export default definePlugin({
                 </Paragraph>
                 {hasEnglishVoices && (
                     <>
-                        <Heading className={classes(Margins.top20, Margins.bottom8)}>Play Example Sounds</Heading>
+                        <HeadingSecondary className={Margins.top20}>Play Example Sounds</HeadingSecondary>
                         <div
                             style={{
                                 display: "grid",

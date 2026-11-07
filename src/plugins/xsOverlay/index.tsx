@@ -5,13 +5,12 @@
  */
 
 import { definePluginSettings } from "@api/Settings";
-import { Button } from "@components/Button";
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import definePlugin, { makeRange, OptionType, PluginNative, ReporterTestable } from "@utils/types";
 import type { Channel, Embed, GuildMember, MessageAttachment, User } from "@vencord/discord-types";
 import { findByCodeLazy, findLazy } from "@webpack";
-import { ChannelStore, GuildRoleStore, GuildStore, UserStore } from "@webpack/common";
+import { Button, ChannelStore, GuildRoleStore, GuildStore, UserStore } from "@webpack/common";
 
 const ChannelTypes = findLazy(m => m.ANNOUNCEMENT_THREAD === 10);
 
@@ -179,7 +178,7 @@ let socket: WebSocket;
 
 async function start() {
     if (socket) socket.close();
-    socket = new WebSocket(`ws://127.0.0.1:${settings.store.webSocketPort ?? 42070}/?client=Vencord`);
+    socket = new WebSocket(`ws://127.0.0.1:${settings.store.webSocketPort ?? 42070}/?client=Equicord`);
     return new Promise((resolve, reject) => {
         socket.onopen = resolve;
         socket.onerror = reject;
@@ -220,7 +219,6 @@ export default definePlugin({
                 titleString = `${message.author.username} (${guild.name}, #${channel.name})`;
             }
 
-
             switch (channel.type) {
                 case ChannelTypes.DM:
                     titleString = message.author.username.trim();
@@ -253,7 +251,6 @@ export default definePlugin({
                 typeof e?.content_type === "string"
                 && e?.content_type.startsWith("image")
             );
-
 
             images.forEach(img => {
                 finalMsg += ` [image: ${img.filename}] `;
@@ -362,7 +359,7 @@ function sendOtherNotif(content: string, titleString: string) {
         content: content,
         useBase64Icon: false,
         icon: "default",
-        sourceApp: "Vencord"
+        sourceApp: "Equicord"
     };
     sendToOverlay(msgData);
 }

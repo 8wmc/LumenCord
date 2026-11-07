@@ -1,0 +1,37 @@
+End-User Licence Agreement for LumenCord
+
+PLEASE READ THIS AGREEMENT CAREFULLY. BY INSTALLING OR USING LUMENCORD, YOU AGREE TO THESE TERMS.
+
+1. WHAT LUMENCORD IS
+LumenCord is a free, open-source Discord client modification. It is built on top of
+Vencord, Equicord and Nightcord, all of which are free software licensed under the
+GNU General Public License v3.0 or later (GPL-3.0-or-later). LumenCord is distributed
+under the same licence. You can always get LumenCord's full source code at:
+https://github.com/8wmc/LumenCord
+
+2. NO WARRANTY
+LumenCord is provided "as is", without warranty of any kind, to the extent permitted
+by law. LumenCord is not affiliated with, endorsed by, or supported by Discord Inc.
+Using any client modification carries some risk of action against your Discord
+account under Discord's own Terms of Service.
+
+3. YOUR RESPONSIBILITY
+Some features included with LumenCord can affect other people if misused (for
+example, messaging features). You are responsible for how you use them. Using
+LumenCord's features to harass, spam, or otherwise harm other people may lead to
+action being taken, including removal of your access to LumenCord, and may also get
+your Discord account banned by Discord itself. LumenCord's developers do not
+monitor, log, or report what you do with the software.
+
+4. YOUR DATA
+LumenCord does not collect your Discord account token, password, or two-factor
+codes, and does not send your settings to any server unless you explicitly set one
+up yourself. LumenCord only talks to Discord's own servers and, when you ask it to,
+GitHub, to check for updates.
+
+5. YOUR RIGHTS UNDER THE GPL
+Nothing in this agreement takes away any right the GPL-3.0 licence gives you,
+including the right to use, study, modify, and redistribute LumenCord's source
+code. If any part of this agreement conflicts with the GPL, the GPL controls.
+
+By clicking "I Agree", you confirm you have read and accept these terms.

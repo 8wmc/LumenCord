@@ -1,37 +1,30 @@
-name: Build DevBuild
+name: Release
 on:
-    workflow_dispatch:
     push:
         branches:
             - main
-        paths:
-            - .github/workflows/build.yml
-            - src/**
-            - browser/**
-            - scripts/build/**
-            - package.json
-            - pnpm-lock.yaml
+
 env:
     FORCE_COLOR: true
-    plugins_changed: false
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 permissions:
     contents: write
 
 jobs:
     Build:
+        name: Build LumenCord Multi-Platform
         runs-on: ubuntu-latest
 
         steps:
-            - name: Checkout repository
-              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - uses: actions/checkout@v4
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+            - uses: pnpm/action-setup@v3
 
-            - name: Use Node.js
-              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+            - name: Use Node.js 20
+              uses: actions/setup-node@v4
               with:
-                  node-version: 24
+                  node-version: 20
                   cache: "pnpm"
 
             - name: Install dependencies
@@ -40,27 +33,82 @@ jobs:
             - name: Build web
               run: pnpm buildWebStandalone
 
-            - name: Build
-              run: pnpm build --standalone
+            - name: Build Desktop bundle (patcher.js, renderer.js, preload.js, asar)
+              run: pnpm run buildDesktop
 
-            - name: Generate plugin list
-              run: pnpm generatePluginJson dist/plugins.json dist/plugin-readmes.json
+            - name: Build Desktop (Windows, Linux, macOS bundle)
+              run: pnpm buildStandalone
 
-            - name: Clean up obsolete files
+            - name: Generate plugin lists
               run: |
-                  rm -rf dist/*-unpacked dist/vendor dist/Installer Vencord.user.css vencordDesktopRenderer.css vencordDesktopRenderer.css.map
+                  pnpm generatePluginJson dist/plugins.json
+                  pnpm generateDevsList dist/devs.json
 
-            - name: Get some values needed for the release
-              id: release_values
+            - name: Package lumencord-dist.zip
               run: |
-                  echo "release_tag=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+                  if [ ! -f dist/desktop/patcher.js ]; then
+                      echo "::error::dist/desktop/patcher.js missing - the installer cannot work without it"
+                      exit 1
+                  fi
+                  mkdir -p dist/release
+                  (cd dist/desktop && zip -r -9 ../release/lumencord-dist.zip .)
 
-            - name: Upload DevBuild as release
-              if: github.repository == '8wmc/LumenCord'
+            - name: Collect files to be released
               run: |
-                  gh release view devbuild >/dev/null 2>&1 || gh release create devbuild --title "DevBuild $RELEASE_TAG" --notes "Latest LumenCord build. Download LumenCordInstaller.exe below to install." --latest || true
-                  gh release upload devbuild --clobber dist/*
-                  gh release edit devbuild --title "DevBuild $RELEASE_TAG" --latest
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  RELEASE_TAG: ${{ env.release_tag }}
+                  cd dist
+                  mkdir -p release
+
+                  cp browser/browser.* release/ || true
+                  cp LumenCord.user.{js,js.LEGAL.txt} release/ || true
+
+                  # Copy plugin metadata, extension zips
+                  cp *.{json,zip} release/ || true
+
+                  cp ../install.sh release/install.sh || true
+
+                  find release -size 0 -delete
+                  rm -f release/package.json
+                  rm -f release/*.map
+
+            - name: Upload LumenCord Multi-OS Release
+              run: |
+                  gh release upload latest --clobber dist/release/* || gh release create latest --title "LumenCord Latest" --notes "Automated Multi-OS release for Windows, Linux (including NixOS) and macOS" dist/release/*
+
+            # The app's updater reads the version from the release title, so keep it in sync with package.json.
+            - name: Put version in release title
+              run: |
+                  VER="v$(jq -r .version < package.json)"
+                  gh release edit latest --title "LumenCord $VER"
+
+    Installer:
+        name: Build LumenCord Installer (Windows)
+        needs: Build
+        runs-on: windows-latest
+        defaults:
+            run:
+                working-directory: installer-src
+
+        steps:
+            - uses: actions/checkout@v4
+
+            # The installer uses an older Electron toolchain, so it builds on Node 16.
+            - name: Use Node.js 16
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 16
+
+            - name: Install installer dependencies
+              run: npm install --legacy-peer-deps --no-audit --no-fund
+
+            - name: Build LumenCord-Installer.exe
+              run: npm run dist
+
+            - name: Check the installer was made
+              shell: bash
+              run: |
+                  ls -la ../release/installer
+                  test -f ../release/installer/LumenCord-Installer.exe
+
+            - name: Upload installer to the latest release
+              shell: bash
+              run: gh release upload latest --clobber ../release/installer/LumenCord-Installer.exe

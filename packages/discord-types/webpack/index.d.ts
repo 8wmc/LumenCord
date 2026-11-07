@@ -7,8 +7,8 @@
 export type ModuleExports = any;
 
 export type Module = {
-    id?: PropertyKey;
-    loaded?: boolean;
+    id: PropertyKey;
+    loaded: boolean;
     exports: ModuleExports;
 };
 
@@ -133,26 +133,21 @@ export type WebpackRequire = ((moduleId: PropertyKey) => ModuleExports) & {
      */
     t: (this: WebpackRequire, value: any, mode: number) => any;
     /**
-     * Define harmony exports on exports. For every prop in getters, define a getter in exports, and for every prop in values, define a plain value, like this:
+     * Define getter functions for harmony exports. For every prop in "definiton" (the module exports), set a getter in "exports" for the getter function in the "definition", like this:
      * @example
      * const exports = {};
-     * const getters = { exportName: () => someExportedValue };
-     * const values = { otherExportName: someOtherValue };
-     * for (const key in getters) {
-     *     if (Object.hasOwn(getters, key) && !Object.hasOwn(exports, key)) {
-     *         Object.defineProperty(exports, key, { enumerable: true, get: getters[key] });
+     * const definition = { exportName: () => someExportedValue };
+     * for (const key in definition) {
+     *     if (Object.hasOwn(definition, key) && !Object.hasOwn(exports, key)) {
+     *         Object.defineProperty(exports, key, {
+     *             get: definition[key],
+     *             enumerable: true
+     *         });
      *     }
      * }
-     * for (const key in values) {
-     *     if (Object.hasOwn(values, key) && !Object.hasOwn(exports, key)) {
-     *         Object.defineProperty(exports, key, { enumerable: true, value: values[key] });
-     *     }
-     * }
-     * // exports is now { exportName: someExportedValue, otherExportName: someOtherValue } (but exportName is actually a getter)
-     *
-     * Older Webpack versions only take the first two arguments.
+     * // exports is now { exportName: someExportedValue } (but each value is actually a getter)
      */
-    d: (this: WebpackRequire, exports: Record<PropertyKey, any>, getters?: Record<PropertyKey, () => ModuleExports>, values?: Record<PropertyKey, ModuleExports>) => void;
+    d: (this: WebpackRequire, exports: Record<PropertyKey, any>, definiton: Record<PropertyKey, () => ModuleExports>) => void;
     /** The ensure chunk handlers, which are used to ensure the files of the chunks are loaded, or load if necessary */
     f: EnsureChunkHandlers;
     /**

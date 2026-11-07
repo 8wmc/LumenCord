@@ -19,40 +19,44 @@
 import "./PluginModal.css";
 
 import { generateId } from "@api/Commands";
-import { hasAnyVisibleSettings, isSettingHidden } from "@api/PluginManager";
-import { useSettings } from "@api/Settings";
+import { hasAnyVisibleSettings } from "@api/PluginManager";
+import { definePluginSettings, useSettings } from "@api/Settings";
+import { removeEmojis } from "./PluginCard";
+import { tPlugin } from "@api/pluginI18n";
+import { BaseText } from "@components/BaseText";
+import { Button } from "@components/Button";
 import ErrorBoundary from "@components/ErrorBoundary";
-import { Heading } from "@components/Heading";
+import { Flex } from "@components/Flex";
 import { Paragraph } from "@components/Paragraph";
 import { debounce } from "@shared/debounce";
-import { gitRemote } from "@shared/vencordUserAgent";
 import { classNameFactory } from "@utils/css";
 import { proxyLazy } from "@utils/lazy";
 import { Margins } from "@utils/margins";
-import { classes } from "@utils/misc";
-import { OptionType, Plugin, PluginTag } from "@utils/types";
-import { RenderModalProps, User } from "@vencord/discord-types";
-import { findCssClassesLazy } from "@webpack";
-import { Clickable, FluxDispatcher, Modal, openModal, React, Tooltip, useEffect, useMemo, UserStore, UserSummaryItem, UserUtils, useState } from "@webpack/common";
+import { classes, isObjectEmpty } from "@utils/misc";
+import { ModalContent, ModalFooter, ModalHeader, ModalProps, ModalRoot, ModalSize, openModal } from "@utils/modal";
+import { OptionType, Plugin } from "@utils/types";
+import { findComponentByCodeLazy, findCssClassesLazy } from "@webpack";
+import { FluxDispatcher, React, Toasts, Tooltip, UserStore } from "@webpack/common";
 import { Constructor } from "type-fest";
 
 import { PluginMeta } from "~plugins";
 
 import { OptionComponentMap } from "./components";
-import { openContributorModal } from "./ContributorModal";
-import { FavoriteButton, GithubButton, WebsiteButton } from "./PluginModalButtons";
-
+import { t } from "@api/i18n";
 const cl = classNameFactory("vc-plugin-modal-");
 
 const AvatarStyles = findCssClassesLazy("moreUsers", "avatar", "clickableAvatar");
+const CloseButton = findComponentByCodeLazy("CLOSE_BUTTON_LABEL");
+const ConfirmModal = findComponentByCodeLazy('parentComponent:"ConfirmModal"');
+const WarningIcon = findComponentByCodeLazy("3.15H3.29c-1.74");
 const UserRecord: Constructor<Partial<User>> = proxyLazy(() => UserStore.getCurrentUser().constructor) as any;
 
-interface PluginModalProps extends RenderModalProps {
+interface PluginModalProps extends ModalProps {
     plugin: Plugin;
     onRestartNeeded(key: string): void;
 }
 
-function makeDummyUser(user: { username: string; id?: string; avatar?: string; }) {
+export function makeDummyUser(user: { username: string; id?: string; avatar?: string; }) {
     const newUser = new UserRecord({
         username: user.username,
         id: user.id ?? generateId(),
@@ -69,70 +73,41 @@ function makeDummyUser(user: { username: string; id?: string; avatar?: string; }
     return newUser;
 }
 
-function PluginTags({ tags }: { tags: PluginTag[]; }) {
-    return (
-        <div className={cl("tags")}>
-            {tags.map(tag => (
-                <div key={tag} className={cl("tag")}>{tag}</div>
-            ))}
-        </div>
-    );
-}
-
 export default function PluginModal({ plugin, onRestartNeeded, onClose, transitionState }: PluginModalProps) {
     const pluginSettings = useSettings([`plugins.${plugin.name}.*`]).plugins[plugin.name];
     const hasSettings = hasAnyVisibleSettings(plugin);
 
-    // avoid layout shift by showing dummy users while loading users
-    const fallbackAuthors = useMemo(() => [makeDummyUser({ username: "Loading...", id: "-1465912127305809920" })], []);
-    const [authors, setAuthors] = useState<Partial<User>[]>([]);
-
-    useEffect(() => {
-        (async () => {
-            for (const user of plugin.authors.slice(0, 6)) {
-                try {
-                    const author = user.id
-                        ? await UserUtils.getUser(String(user.id))
-                            .catch(() => makeDummyUser({ username: user.name }))
-                        : makeDummyUser({ username: user.name });
-
-                    setAuthors(a => [...a, author]);
-                } catch (e) {
-                    continue;
-                }
-            }
-        })();
-    }, [plugin.authors]);
+    function handleResetClick() {
+        openWarningModal(plugin, onRestartNeeded);
+    }
 
     function renderSettings() {
         const { settings } = plugin;
         if (!hasSettings || !settings)
-            return <Paragraph>There are no settings for this plugin.</Paragraph>;
+            return <Paragraph>{t("No settings available for this plugin.")}</Paragraph>;
 
-        const options = Object.entries(settings.def).map(([key, setting]) => {
-            if (setting.type === OptionType.CUSTOM) return null;
-
-            if (isSettingHidden(settings, setting)) return null;
+        const options = Object.entries(settings.def).map(([key, option]) => {
+            if (option.type === OptionType.CUSTOM || option.hidden) return null;
 
             function onChange(newValue: any) {
-                const option = plugin.settings!.def[key];
-                if (!option || option.type === OptionType.CUSTOM) return;
+                const opt = plugin.settings!.def[key];
+                if (!opt || opt.type === OptionType.CUSTOM) return;
 
                 pluginSettings[key] = newValue;
 
-                if (option.restartNeeded) onRestartNeeded(key);
+                if (opt.restartNeeded) onRestartNeeded(key);
             }
 
-            const Component = OptionComponentMap[setting.type];
+            const Component = OptionComponentMap[option.type];
+            if (!Component) return null;
             return (
                 <ErrorBoundary noop key={key}>
                     <Component
                         id={key}
-                        setting={setting}
+                        option={option}
                         onChange={debounce(onChange)}
                         pluginSettings={pluginSettings}
                         definedSettings={settings}
-                        closePluginSettings={onClose}
                     />
                 </ErrorBoundary>
             );
@@ -145,109 +120,61 @@ export default function PluginModal({ plugin, onRestartNeeded, onClose, transiti
         );
     }
 
-    function renderMoreUsers(_label: string, count: number) {
-        const sliceCount = plugin.authors.length - count;
-        const sliceStart = plugin.authors.length - sliceCount;
-        const sliceEnd = sliceStart + plugin.authors.length - count;
+    const pluginMeta = PluginMeta[plugin.name] ?? { folderName: "", userPlugin: (plugin as any).isUserPlugin ?? false };
+    const isEquicordPlugin = pluginMeta.folderName?.startsWith("src/equicordplugins/") ?? false;
 
-        return (
-            <Tooltip text={plugin.authors.slice(sliceStart, sliceEnd).map(u => u.name).join(", ")}>
-                {({ onMouseEnter, onMouseLeave }) => (
-                    <div
-                        className={AvatarStyles.moreUsers}
-                        onMouseEnter={onMouseEnter}
-                        onMouseLeave={onMouseLeave}
-                    >
-                        +{sliceCount}
-                    </div>
-                )}
-            </Tooltip>
-        );
-    }
-
-    const pluginMeta = PluginMeta[plugin.name];
+    const modalSize = plugin.settingsAboutComponent ? ModalSize.LARGE : ModalSize.MEDIUM;
 
     return (
-        <Modal
-            transitionState={transitionState}
-            onClose={onClose}
-            size="lg"
-            title={
-                <div className={cl("header")}>
-                    <Heading tag="h3">{plugin.name}</Heading>
-                    {!pluginMeta.userPlugin && (
-                        <div className="vc-settings-modal-links">
-                            <FavoriteButton
-                                isFavorite={pluginSettings.isFavorite ?? false}
-                                onClick={() => pluginSettings.isFavorite = !pluginSettings.isFavorite}
-                            />
-                            <WebsiteButton
-                                text="View more info"
-                                href={`https://vencord.dev/plugins/${plugin.name}`}
-                            />
-                            <GithubButton
-                                text="View source code"
-                                href={`https://github.com/${gitRemote}/tree/main/src/plugins/${pluginMeta.folderName}`}
-                            />
-                        </div>
-                    )}
-                </div>
-            }
-            subtitle={
-                <div className={cl("info")}>
-                    <div>
-                        <Paragraph>{plugin.description}</Paragraph>
-                        {!!plugin.tags?.length && <PluginTags tags={plugin.tags} />}
-                    </div>
-                </div>
-            }
-        >
-            <div className={"vc-settings-modal-content"}>
-                <section>
-                    <Heading tag="h3" className={classes(Margins.top8, Margins.bottom8)}>Authors</Heading>
-                    <div style={{ width: "fit-content" }}>
-                        <ErrorBoundary noop>
-                            <UserSummaryItem
-                                users={authors.length ? authors : fallbackAuthors}
-                                guildId={undefined}
-                                renderIcon={false}
-                                max={6}
-                                showDefaultAvatarsForNullUsers
-                                renderMoreUsers={renderMoreUsers}
-                                renderUser={(user: User) => (
-                                    <Clickable
-                                        className={AvatarStyles.clickableAvatar}
-                                        onClick={() => openContributorModal(user)}
-                                    >
-                                        <img
-                                            className={AvatarStyles.avatar}
-                                            src={user.getAvatarURL(void 0, 80, true)}
-                                            alt={user.username}
-                                            title={user.username}
-                                        />
-                                    </Clickable>
-                                )}
-                            />
-                        </ErrorBoundary>
-                    </div>
-                </section>
-
-                {!!plugin.settingsAboutComponent && (
-                    <div className={Margins.top16}>
-                        <section>
+        <ModalRoot transitionState={transitionState} size={modalSize}>
+            <ModalHeader separator={false} className={cl("header")}>
+                <div className={cl("header-content")}>
+                    <BaseText size="lg" weight="semibold" className={cl("title")}>{removeEmojis(tPlugin(plugin.name))}</BaseText>
+                    <BaseText size="sm" className={cl("description")}>{removeEmojis(tPlugin(plugin.description ?? ""))}</BaseText>
+                    {!!plugin.settingsAboutComponent && (
+                        <div className={Margins.top8}>
                             <ErrorBoundary message="An error occurred while rendering this plugin's custom Info Component">
                                 <plugin.settingsAboutComponent />
                             </ErrorBoundary>
-                        </section>
-                    </div>
-                )}
+                        </div>
+                    )}
+                </div>
+                <div className={cl("header-trailing")}>
+                    <CloseButton onClick={onClose} />
+                </div>
+            </ModalHeader>
 
-                <section>
-                    <Heading tag="h3" className={classes(Margins.top16, Margins.bottom8)}>Settings</Heading>
-                    {renderSettings()}
-                </section>
-            </div>
-        </Modal>
+            {hasSettings && (
+                <ModalContent className={"vc-settings-modal-content"}>
+                    <section>
+                        <BaseText size="lg" weight="semibold" color="text-strong" className={classes(Margins.bottom8)}>{t("Settings")}</BaseText>
+                        {renderSettings()}
+                    </section>
+                </ModalContent>
+            )}
+            {hasSettings && (
+                <ModalFooter>
+                    <Flex flexDirection="column" style={{ width: "100%" }}>
+                        <Flex style={{ justifyContent: "space-between", alignItems: "center" }}>
+                            <Tooltip text={t("Reset to default settings")} shouldShow={!isObjectEmpty(pluginSettings)}>
+                                {({ onMouseEnter, onMouseLeave }) => (
+                                    <Button
+                                        className={cl("disable-warning")}
+                                        size="small"
+                                        variant="primary"
+                                        onClick={handleResetClick}
+                                        onMouseEnter={onMouseEnter}
+                                        onMouseLeave={onMouseLeave}
+                                    >
+                                        {t("Reset")}
+                                    </Button>
+                                )}
+                            </Tooltip>
+                        </Flex>
+                    </Flex>
+                </ModalFooter>
+            )}
+        </ModalRoot >
     );
 }
 
@@ -260,3 +187,124 @@ export function openPluginModal(plugin: Plugin, onRestartNeeded?: (pluginName: s
         />
     ));
 }
+
+function resetSettings(plugin: Plugin, onRestartNeeded?: (pluginName: string) => void) {
+    const defaultSettings = plugin.settings?.def;
+    const pluginName = plugin.name;
+
+    if (!defaultSettings) return;
+
+    const newSettings: Record<string, any> = {};
+    let restartNeeded = false;
+
+    for (const key in defaultSettings) {
+        if (key === "enabled") continue;
+
+        const setting = defaultSettings[key];
+        setting.type = setting.type ?? OptionType.STRING;
+
+        if (setting.type === OptionType.STRING) {
+            newSettings[key] = setting.default !== undefined && setting.default !== "" ? setting.default : "";
+        } else if ("default" in setting && setting.default !== undefined) {
+            newSettings[key] = setting.default;
+        }
+
+        if (setting?.restartNeeded) {
+            restartNeeded = true;
+        }
+    }
+
+    const currentSettings = plugin.settings?.store;
+    if (currentSettings) {
+        Object.assign(currentSettings, newSettings);
+    }
+
+    if (restartNeeded) {
+        onRestartNeeded?.(plugin.name);
+    }
+
+    Toasts.show({
+        message: `${pluginName} settings reset.`,
+        id: Toasts.genId(),
+        type: Toasts.Type.SUCCESS,
+        options: {
+            position: Toasts.Position.TOP
+        }
+    });
+}
+
+export function openWarningModal(plugin?: Plugin | null, onRestartNeeded?: (pluginName: string) => void, isPlugin = true, enabledPlugins?: number | null, reset?: () => void) {
+    openModal(props => (
+        <ConfirmModal
+            {...props}
+            className={cl("confirm")}
+            header={isPlugin ? t("Reset Settings") : t("Disable Plugins")}
+            confirmText={isPlugin ? t("Reset") : t("Disable All")}
+            cancelText={t("Cancel")}
+            onConfirm={() => {
+                if (isPlugin && plugin) {
+                    resetSettings(plugin, onRestartNeeded);
+                } else {
+                    reset?.();
+                }
+            }}
+            onCancel={props.onClose}
+        >
+            <Paragraph>
+                {isPlugin
+                    ? <>{t("Reset all settings for")} <strong>{plugin?.name}</strong>?</>
+                    : t("Disable {n} plugin(s)?").replace("{n}", String(enabledPlugins))
+                }
+            </Paragraph>
+            <div className={classes(Margins.top16, cl("warning"))}>
+                <WarningIcon color="var(--text-feedback-critical)" />
+                <span>{t("This action is irreversible.")}</span>
+            </div>
+        </ConfirmModal>
+    ));
+}
+
+export function openResetDefaultsModal(reset: () => void) {
+    openModal(props => (
+        <ConfirmModal
+            {...props}
+            className={cl("confirm")}
+            header={t("Apply Default Config")}
+            confirmText={t("Apply Defaults")}
+            cancelText={t("Cancel")}
+            onConfirm={reset}
+            onCancel={props.onClose}
+        >
+            <Paragraph>
+                {t("This will reset all plugins to their default enabled/disabled state (how they are when Nightcord is first installed).")} 
+            </Paragraph>
+            <div className={classes(Margins.top16, cl("warning"))}>
+                <WarningIcon color="var(--text-feedback-critical)" />
+                <span>{t("All your current plugin toggles will be lost.")}</span>
+            </div>
+        </ConfirmModal>
+    ));
+}
+
+export function openApplyBasicConfigModal(apply: () => void) {
+    openModal(props => (
+        <ConfirmModal
+            {...props}
+            className={cl("confirm")}
+            header={t("Apply Basic Config")}
+            confirmText={t("Apply")}
+            cancelText={t("Cancel")}
+            onConfirm={apply}
+            onCancel={props.onClose}
+        >
+            <Paragraph>
+                {t("This will disable all plugins and enable only the basic configuration.")} 
+            </Paragraph>
+            <div className={classes(Margins.top16, cl("warning"))}>
+                <WarningIcon color="var(--text-feedback-critical)" />
+                <span>{t("All your current plugin toggles will be replaced.")}</span>
+            </div>
+        </ConfirmModal>
+    ));
+}
+

@@ -18,48 +18,81 @@
 
 import { downloadSettingsBackup, uploadSettingsBackup } from "@api/SettingsSync/offline";
 import { Button } from "@components/Button";
-import { Card } from "@components/Card";
+import { Divider } from "@components/Divider";
 import { Flex } from "@components/Flex";
 import { Heading } from "@components/Heading";
+import { Notice } from "@components/Notice";
 import { Paragraph } from "@components/Paragraph";
 import { SettingsTab, wrapTab } from "@components/settings/tabs/BaseTab";
-import { Text } from "@components/Text";
 import { Margins } from "@utils/margins";
+import { React } from "@webpack/common";
+import { t } from "@api/i18n";
 
 function BackupAndRestoreTab() {
     return (
         <SettingsTab>
-            <Flex flexDirection="column" gap="0.5em">
-                <Card variant="warning">
-                    <Heading tag="h4">Warning</Heading>
-                    <Paragraph>Importing a settings file will overwrite your current settings.</Paragraph>
-                </Card>
+            <Heading className={Margins.top16}>{t("Backup & Restore")}</Heading>
+            <Paragraph className={Margins.bottom20}>
+                {t("Import and export your Nightcord settings as a JSON file. This allows you to easily transfer your settings to another device, or recover them after reinstalling Nightcord or Discord.")}
+            </Paragraph>
 
-                <Paragraph size="md" className={Margins.bottom8}>
-                    You can import and export your Vencord settings as a JSON file.
-                    This allows you to easily transfer your settings to another device,
-                    or recover your settings after reinstalling LumenCord or Discord.
-                </Paragraph>
+            <Notice.Warning className={Margins.bottom20}>
+                {t("Sensitive data (API keys, tokens, custom uploader credentials) are automatically excluded from exports for your security.")}
+            </Notice.Warning>
 
-                <Heading tag="h4">Settings Export contains:</Heading>
-                <Text size="md" className={Margins.bottom8}>
-                    <ul>
-                        <li>&mdash; Custom QuickCSS</li>
-                        <li>&mdash; Theme Links</li>
-                        <li>&mdash; Plugin Settings</li>
-                    </ul>
-                </Text>
+            <Notice.Warning className={Margins.bottom20}>
+                {t("Importing a settings file will overwrite your current settings. Make sure to export a backup first if you want to keep your current configuration.")}
+            </Notice.Warning>
 
-                <Flex>
-                    <Button onClick={() => uploadSettingsBackup()}>
-                        Import Settings
-                    </Button>
-                    <Button onClick={downloadSettingsBackup}>
-                        Export Settings
-                    </Button>
-                </Flex>
+            <Heading>{t("What is included in a backup")}</Heading>
+            <Paragraph className={Margins.bottom20}>
+                {t("Custom QuickCSS, Theme Links, Plugin Settings, DataStore Data")}
+            </Paragraph>
+
+            <Divider className={Margins.bottom20} />
+
+            <Heading>{t("Import Settings")}</Heading>
+            <Paragraph className={Margins.bottom16}>
+                {t("Select a previously exported settings file to restore your configuration.")}
+            </Paragraph>
+
+            <Flex gap="8px" className={Margins.bottom20} style={{ flexWrap: "wrap" }}>
+                <Button onClick={() => uploadSettingsBackup("all")} size="small" variant="secondary">
+                    {t("Import All Settings")}
+                </Button>
+                <Button onClick={() => uploadSettingsBackup("plugins")} size="small">
+                    {t("Import Plugins Only")}
+                </Button>
+                <Button onClick={() => uploadSettingsBackup("css")} size="small">
+                    {t("Import QuickCSS")}
+                </Button>
+                <Button onClick={() => uploadSettingsBackup("datastore")} size="small">
+                    {t("Import DataStore")}
+                </Button>
             </Flex>
-        </SettingsTab >
+
+            <Divider className={Margins.bottom20} />
+
+            <Heading>{t("Export Settings")}</Heading>
+            <Paragraph className={Margins.bottom16}>
+                {t("Download your current settings as a backup file.")}
+            </Paragraph>
+
+            <Flex gap="8px" style={{ flexWrap: "wrap" }}>
+                <Button onClick={() => downloadSettingsBackup("all")} size="small" variant="secondary">
+                    {t("Export All Settings")}
+                </Button>
+                <Button onClick={() => downloadSettingsBackup("plugins")} size="small">
+                    {t("Export Plugins")}
+                </Button>
+                <Button onClick={() => downloadSettingsBackup("css")} size="small">
+                    {t("Export QuickCSS")}
+                </Button>
+                <Button onClick={() => downloadSettingsBackup("datastore")} size="small">
+                    {t("Export DataStore")}
+                </Button>
+            </Flex>
+        </SettingsTab>
     );
 }
 

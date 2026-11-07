@@ -8,9 +8,13 @@ import { addThemeChangeListener, removeThemeChangeListener } from "@api/Themes";
 import { Devs } from "@utils/constants";
 import { sleep } from "@utils/misc";
 import definePlugin from "@utils/types";
-import { GuildReadStateStore, NotificationSettingsStore, RelationshipStore, ThemeStore } from "@webpack/common";
+import { FluxStore } from "@vencord/discord-types";
+import { findStoreLazy } from "@webpack";
+import { NotificationSettingsStore, RelationshipStore, ThemeStore } from "@webpack/common";
 
 import managedStyle from "./styles.css?managed";
+
+const GuildReadStateStore: FluxStore & { getTotalMentionCount: () => number; hasAnyUnread: () => boolean; } = findStoreLazy("GuildReadStateStore");
 
 let _keybinds: Record<string, { onTrigger: () => any; }>;
 
@@ -21,8 +25,6 @@ function colorToHex(color: string) {
     ctx.fillRect(0, 0, 1, 1);
     return "#" + [...ctx.getImageData(0, 0, 1, 1).data.slice(0, 3)].map(n => n.toString(16).padStart(2, "0")).join("");
 }
-
-const icon = "https://discord.com/assets/favicon.ico";
 
 let linkEl: HTMLLinkElement | undefined;
 async function setManifest() {
@@ -36,6 +38,7 @@ async function setManifest() {
 
     const endpoint = "https:" + window.GLOBAL_ENV.WEBAPP_ENDPOINT;
     const appUrl = endpoint + "/app"; // URL when PWA launches
+    const icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')!.href;
     const styles = getComputedStyle(document.body);
     const manifest = {
         id: appUrl,
@@ -98,7 +101,7 @@ export default definePlugin({
     authors: [Devs.ThaUnknown],
     tags: ["Utility"],
     managedStyle,
-    enabledByDefault: true,
+    enabledByDefault: !IS_DISCORD_DESKTOP,
 
     flux: {
         KEYBINDS_REGISTER_GLOBAL_KEYBIND_ACTIONS: ({ keybinds }: { keybinds: Record<string, { onTrigger: () => any; }>; }) => {
@@ -119,7 +122,6 @@ export default definePlugin({
         NotificationSettingsStore.addChangeListener(this.setBadge);
         GuildReadStateStore.addChangeListener(this.setBadge);
         RelationshipStore.addChangeListener(this.setBadge);
-        this.setBadge();
 
         if (!IS_USERSCRIPT) {
             // keybinds
@@ -170,8 +172,8 @@ export default definePlugin({
         {
             find: "#{intl::KEYBIND_IN_BROSWER_NOTICE}",
             replacement: {
-                match: /,{type:"info",message:(?=.{0,50}?#{intl::KEYBIND_IN_BROSWER_NOTICE})/,
-                replace: ',{type:"info",children:$self.renderKeybindsButton(),_message:',
+                match: /,{type:"info",children:(?=.{0,50}?#{intl::KEYBIND_IN_BROSWER_NOTICE})/,
+                replace: ',{type:"info",children:$self.renderKeybindsButton(),_children:',
                 predicate: () => !IS_USERSCRIPT
             }
         }
@@ -191,16 +193,10 @@ export default definePlugin({
             const hasUnread = GuildReadStateStore.hasAnyUnread();
             const disableUnreadBadge = NotificationSettingsStore.getDisableUnreadBadge();
 
-            const totalCount = mentionCount + pendingRequests;
+            let totalCount = mentionCount + pendingRequests;
+            if (!totalCount && hasUnread && !disableUnreadBadge) totalCount = -1;
 
-            if (totalCount > 0) {
-                navigator.setAppBadge(totalCount);
-            } else if (hasUnread && !disableUnreadBadge) {
-                // no argument shows a dot instead of a number
-                navigator.setAppBadge();
-            } else {
-                navigator.clearAppBadge();
-            }
+            navigator.setAppBadge(totalCount);
         } catch (e) {
             console.error(e);
         }

@@ -24,7 +24,6 @@
 import monacoHtmlLocal from "file://monacoWin.html?minify";
 import * as DataStore from "@api/DataStore";
 import type { Settings } from "@api/Settings";
-import { getThemeInfo } from "@main/themes";
 import { debounce } from "@shared/debounce";
 import { localStorage } from "@utils/localStorage";
 import { getStylusWebStoreUrl } from "@utils/web";
@@ -39,15 +38,14 @@ const setCssDebounced = debounce((css: string) => VencordNative.quickCss.set(css
 
 const themeStore = DataStore.createStore("VencordThemes", "VencordThemeData");
 
-let win: Window;
-
 // probably should make this less cursed at some point
 window.VencordNative = {
     themes: {
         uploadTheme: (fileName: string, fileData: string) => DataStore.set(fileName, fileData, themeStore),
         deleteTheme: (fileName: string) => DataStore.del(fileName, themeStore),
+        getThemesDir: async () => "",
         getThemesList: () => DataStore.entries(themeStore).then(entries =>
-            entries.map(([name, css]) => getThemeInfo(css, name.toString()))
+            entries.map(([name, css]) => ({ fileName: name as string, content: css }))
         ),
         getThemeData: (fileName: string) => DataStore.get(fileName, themeStore),
         getSystemValues: async () => ({}),
@@ -57,7 +55,6 @@ window.VencordNative = {
 
     native: {
         getVersions: () => ({}),
-        supportsWindowsMaterial: () => false,
         openExternal: async (url) => void open(url, "_blank"),
         getRendererCss: async () => {
             if (IS_USERSCRIPT)
@@ -73,7 +70,7 @@ window.VencordNative = {
     },
 
     updater: {
-        getRepo: async () => ({ ok: true, value: "https://github.com/Vendicated/Vencord" }),
+        getRepo: async () => ({ ok: true, value: "https://github.com/Equicord/Equicord" }),
         getUpdates: async () => ({ ok: true, value: [] }),
         update: async () => ({ ok: true, value: false }),
         rebuild: async () => ({ ok: true, value: true }),
@@ -100,10 +97,7 @@ window.VencordNative = {
             }
 
             const features = `popup,width=${Math.min(window.innerWidth, 1000)},height=${Math.min(window.innerHeight, 1000)}`;
-
-            win?.close();
-
-            win = open("about:blank", "VencordQuickCss", features)!;
+            const win = open("about:blank", "VencordQuickCss", features);
             if (!win) {
                 alert("Failed to open QuickCSS popup. Make sure to allow popups!");
                 return;
@@ -128,16 +122,22 @@ window.VencordNative = {
     settings: {
         get: () => {
             try {
-                return JSON.parse(localStorage.getItem("VencordSettings") || "{}");
+                return JSON.parse(localStorage.getItem("EquicordSettings") || "{}");
             } catch (e) {
                 console.error("Failed to parse settings from localStorage: ", e);
                 return {};
             }
         },
-        set: async (s: Settings) => localStorage.setItem("VencordSettings", JSON.stringify(s)),
+        set: async (s: Settings) => localStorage.setItem("EquicordSettings", JSON.stringify(s)),
+        getSettingsDir: async () => "LocalStorage",
         openFolder: async () => Promise.reject("settings:openFolder is not supported on web"),
     },
 
     pluginHelpers: {} as any,
     csp: {} as any,
+    tray: {
+        setUpdateState: NOOP,
+        onCheckUpdates: NOOP,
+        onRepair: NOOP,
+    },
 };

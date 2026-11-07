@@ -103,7 +103,7 @@ function ReactionUsers({ message, users }: { message: Message, users: User[]; })
             <div
                 onClick={handleClickAvatar}
                 onKeyDown={handleClickAvatar}
-                style={!settings.store.clickableAvatars ? { pointerEvents: "none" } : {}}
+                style={settings.store.avatarClick ? {} : { pointerEvents: "none" }}
             >
                 <UserSummaryItem
                     users={users}
@@ -119,10 +119,10 @@ function ReactionUsers({ message, users }: { message: Message, users: User[]; })
 }
 
 const settings = definePluginSettings({
-    clickableAvatars: {
-        description: "While this is enabled, clicking a reacting user's avatar will open their profile instead of adding the reaction",
+    avatarClick: {
+        description: "Toggle clicking avatars in reactions",
         type: OptionType.BOOLEAN,
-        default: true,
+        default: false,
         restartNeeded: true
     }
 });
@@ -132,6 +132,7 @@ export default definePlugin({
     description: "Renders the avatars of users who reacted to a message",
     tags: ["Reactions", "Chat", "Appearance"],
     authors: [Devs.Ven, Devs.KannaDev, Devs.newwares, Devs.paige],
+    isModified: true,
     settings,
     patches: [
         {
@@ -177,7 +178,10 @@ export default definePlugin({
         let users = Array.from(reactionMap, ([id]) => UserStore.getUser(id)).filter(Boolean);
 
         if (isPluginEnabled(NoBlockedMessagesPlugin.name))
-            users = users.filter(user => !NoBlockedMessagesPlugin.shouldIgnoreUser(user.id));
+            users = users.filter(user => {
+                const { blocked, ignored } = NoBlockedMessagesPlugin.getRelationshipStatus(user);
+                return !(blocked || (ignored && NoBlockedMessagesPlugin.settings.store.alsoHideIgnoredUsers));
+            });
 
         return users.length === 0
             ? null

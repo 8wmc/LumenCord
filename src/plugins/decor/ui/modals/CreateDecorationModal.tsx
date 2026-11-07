@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Card } from "@components/Card";
+import { BaseText } from "@components/BaseText";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Heading } from "@components/Heading";
 import { Link } from "@components/Link";
@@ -16,10 +16,15 @@ import { AvatarDecorationModalPreview } from "@plugins/decor/ui/components";
 import { openInviteModal } from "@utils/discord";
 import { Margins } from "@utils/margins";
 import { RenderModalProps } from "@vencord/discord-types";
-import { findComponentByCodeLazy } from "@webpack";
+import { filters, findComponentByCodeLazy, mapMangledModuleLazy } from "@webpack";
 import { closeAllModals, FluxDispatcher, GuildStore, Modal, NavigationRouter, openModal, TextInput, useEffect, useMemo, UserStore, useState } from "@webpack/common";
 
 const FileUpload = findComponentByCodeLazy(".currentTarget.files", "lineClamp:1");
+
+const { HelpMessage, HelpMessageTypes } = mapMangledModuleLazy('POSITIVE="positive', {
+    HelpMessageTypes: filters.byProps("POSITIVE", "WARNING", "INFO"),
+    HelpMessage: filters.byCode("messageType:")
+});
 
 function useObjectURL(object: Blob | MediaSource | null) {
     const [url, setUrl] = useState<string | null>(null);
@@ -79,18 +84,18 @@ function CreateDecorationModal(props: RenderModalProps) {
     >
         <div className={cl("create-decoration-modal-content", DecorationModalClasses.modal)}>
             <ErrorBoundary>
-                <Card variant="warning">
+                <HelpMessage messageType={HelpMessageTypes.WARNING}>
                     Make sure your decoration does not violate <Link
                         href="https://github.com/decor-discord/.github/blob/main/GUIDELINES.md"
                     >
                         the guidelines
                     </Link> before submitting it.
-                </Card>
+                </HelpMessage>
                 <div className={cl("create-decoration-modal-form-preview-container")}>
                     <div className={cl("create-decoration-modal-form")}>
-                        {error !== null && <Paragraph size="xs" style={{ color: "var(--text-danger, var(--text-default))" }}>{error.message}</Paragraph>}
+                        {error !== null && <BaseText size="xs" color="text-danger">{error.message}</BaseText>}
                         <section>
-                            <Heading className={Margins.bottom8}>File</Heading>
+                            <Heading>File</Heading>
                             <FileUpload
                                 filename={file?.name}
                                 placeholder="Choose a file"
@@ -103,7 +108,7 @@ function CreateDecorationModal(props: RenderModalProps) {
                             </Paragraph>
                         </section>
                         <section>
-                            <Heading className={Margins.bottom8}>Name</Heading>
+                            <Heading>Name</Heading>
                             <TextInput
                                 placeholder="Companion Cube"
                                 value={name}
@@ -121,7 +126,7 @@ function CreateDecorationModal(props: RenderModalProps) {
                         />
                     </div>
                 </div>
-                <Card variant="info" defaultPadding className={Margins.bottom8}>
+                <HelpMessage messageType={HelpMessageTypes.INFO} className={Margins.bottom8}>
                     To receive updates on your decoration's review, join <Link
                         href={`https://discord.gg/${INVITE_KEY}`}
                         onClick={async e => {
@@ -141,7 +146,7 @@ function CreateDecorationModal(props: RenderModalProps) {
                     >
                         Decor's Discord server
                     </Link> and allow direct messages.
-                </Card>
+                </HelpMessage>
             </ErrorBoundary>
         </div>
     </Modal>;

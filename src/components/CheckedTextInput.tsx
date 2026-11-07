@@ -16,13 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { React, TextInput, useState } from "@webpack/common";
+import { React, TextInput } from "@webpack/common";
 
 interface TextInputProps {
     /**
-     * WARNING: Changing this between renders will have no effect!
+     * The current value. If this changes externally after mount (e.g. async
+     * settings load), the input will resync to it as long as the user isn't
+     * currently mid-typing an invalid value.
      */
-    initialValue: string;
+    value: string;
     /**
      * This will only be called if the new value passed validate()
      */
@@ -33,21 +35,30 @@ interface TextInputProps {
      * Otherwise, return a string containing the reason for this input being invalid
      */
     validate(v: string): true | string;
+
+    placeholder?: string;
 }
 
 /**
  * A very simple wrapper around Discord's TextInput that validates input and shows
  * the user an error message and only calls your onChange when the input is valid
  */
-export function CheckedTextInput({ initialValue, onChange, validate }: TextInputProps) {
-    const [value, setValue] = useState(initialValue);
-    const [error, setError] = useState<string>();
+export function CheckedTextInput({ value: initialValue, onChange, validate, placeholder }: TextInputProps) {
+    const [value, setValue] = React.useState(initialValue);
+    const [error, setError] = React.useState<string>();
+
+    // Keep the input in sync if the underlying value changes from outside
+    // (e.g. settings finish loading/syncing after this component already mounted).
+    // We only re-sync while there's no pending validation error, so we don't
+    // fight the user while they're actively typing an invalid value.
+    React.useEffect(() => {
+        if (error === undefined) setValue(initialValue);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialValue]);
 
     function handleChange(v: string) {
         setValue(v);
-
         const res = validate(v);
-
         if (res === true) {
             setError(void 0);
             onChange(v);
@@ -63,6 +74,7 @@ export function CheckedTextInput({ initialValue, onChange, validate }: TextInput
                 value={value}
                 onChange={handleChange}
                 error={error}
+                placeholder={placeholder}
             />
         </>
     );

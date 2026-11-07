@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { cl } from "@plugins/shikiCodeblocks.desktop/utils/misc";
+import { cl, hljs } from "@plugins/shikiCodeblocks.desktop/utils/misc";
 import type { IThemedToken } from "@vap/shiki";
 import { JSX } from "react";
 
@@ -24,25 +24,30 @@ import { ThemeBase } from "./Highlighter";
 
 export interface CodeProps {
     theme: ThemeBase;
-    useArborium: boolean;
-    arboriumHtml: string | null;
+    useHljs: boolean;
+    lang?: string;
     content: string;
     tokens: IThemedToken[][] | null;
 }
 
 export const Code = ({
     theme,
-    useArborium,
-    arboriumHtml,
+    useHljs,
+    lang,
     content,
     tokens,
 }: CodeProps) => {
     let lines!: JSX.Element[];
 
-    if (useArborium && arboriumHtml) {
-        lines = arboriumHtml
-            .split("\n")
-            .map((line, i) => <span key={i} dangerouslySetInnerHTML={{ __html: line }} />);
+    if (useHljs) {
+        try {
+            const { value: hljsHtml } = hljs.highlight(content, { language: lang!, ignoreIllegals: true });
+            lines = hljsHtml
+                .split("\n")
+                .map((line, i) => <span key={i} dangerouslySetInnerHTML={{ __html: line }} />);
+        } catch {
+            lines = content.split("\n").map((line, idx) => <span key={idx}>{line}</span>);
+        }
     } else {
         const renderTokens =
             tokens ??

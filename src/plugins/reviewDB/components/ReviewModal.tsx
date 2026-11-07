@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { Span } from "@components/Span";
+import { BaseText } from "@components/BaseText";
 import { Auth } from "@plugins/reviewDB/auth";
 import { ReviewType } from "@plugins/reviewDB/entities";
 import { REVIEWS_PER_PAGE, UserReviewsData } from "@plugins/reviewDB/reviewDbApi";
@@ -30,9 +30,9 @@ import { ComponentProps } from "react";
 import ReviewComponent from "./ReviewComponent";
 import ReviewsView, { ReviewsInputComponent } from "./ReviewsView";
 
-const Paginator = findComponentByCodeLazy<ComponentProps<t.Paginator>>('rel:"prev",children:');
+export const Paginator = findComponentByCodeLazy<ComponentProps<t.Paginator>>('rel:"prev",children:');
 // This matches a massive module with ~230k chars so we need an anchor before to prevent REDOS
-const requirePaginator = extractAndLoadChunksLazy(['name:"SearchResults"'], new RegExp(`name:"StageChannelCall",renderLoader:.+?(?:${DefaultExtractAndLoadChunksRegex.source}).{0,30}?name:"SearchResults"`));
+export const requirePaginator = extractAndLoadChunksLazy(['name:"SearchResults"'], new RegExp(`name:"StageChannelCall",renderLoader:.+?(?:${DefaultExtractAndLoadChunksRegex.source}).{0,30}?name:"SearchResults"`));
 
 function ReviewsModal({ modalProps, modalKey, discordId, name, type }: { modalProps: t.RenderModalProps; modalKey: string, discordId: string; name: string; type: ReviewType; }) {
     const [data, setData] = useState<UserReviewsData>();
@@ -49,10 +49,10 @@ function ReviewsModal({ modalProps, modalKey, discordId, name, type }: { modalPr
             {...modalProps}
             size="lg"
             title={
-                <Span size="lg" weight="semibold" className={cl("modal-header")}>
+                <BaseText size="lg" weight="semibold" className={cl("modal-header")}>
                     {name}'s Reviews
                     {!!reviewCount && <span> ({reviewCount} Reviews)</span>}
-                </Span>
+                </BaseText>
             }
             preview={
                 <div className={cl("modal-footer")}>

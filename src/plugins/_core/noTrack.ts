@@ -21,12 +21,11 @@ import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
 import { WebpackRequire } from "@vencord/discord-types/webpack";
-import { Flux, FluxDispatcher } from "@webpack/common";
 
 const settings = definePluginSettings({
     disableAnalytics: {
         type: OptionType.BOOLEAN,
-        description: "Block Discord's tracking analytics. Disable this if you want badges to track your progress (eg: hours streamed).",
+        description: "Disable Discord's tracking (analytics/'science')",
         default: true,
         restartNeeded: true
     }
@@ -45,8 +44,8 @@ export default definePlugin({
             find: "AnalyticsActionHandlers.handle",
             predicate: () => settings.store.disableAnalytics,
             replacement: {
-                match: /\(0,\i\.analyticsTrackingStoreMaker\)/,
-                replace: "$self.analyticsTrackingStoreMaker",
+                match: /^.+$/,
+                replace: "()=>{}",
             },
         },
         {
@@ -141,37 +140,5 @@ export default definePlugin({
                 Reflect.deleteProperty(window, "DiscordSentry");
             }
         });
-    },
-
-    analyticsTrackingStoreMaker() {
-        class AnalyticsTrackingStoreStub extends Flux.Store {
-            static displayName = "AnalyticsTrackingStore";
-
-            requestDrain() { }
-
-            async submitEventsImmediately() {
-                // This is supposed to return a Discord rest response but we can't know what the correct shape would be, because
-                // 1. It's not used anywhere
-                // 2. It takes a dynamic url
-                // Instead we throw an error with the same structure as a Discord rest error which they probably should handle gracefully.
-                // Discord also throws a plain object instead of Error class
-
-                throw {
-                    ok: false,
-                    status: 500,
-                    body: {
-                        message: "Analytics tracking is disabled by NoTrack",
-                        code: 0
-                    },
-                    headers: {},
-                    text: JSON.stringify({
-                        message: "Analytics tracking is disabled by NoTrack",
-                        code: 0
-                    })
-                };
-            }
-        }
-
-        return new AnalyticsTrackingStoreStub(FluxDispatcher);
     }
 });

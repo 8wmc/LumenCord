@@ -1,32 +1,41 @@
 /*
- * Vencord, a Discord client mod
- * Copyright (c) 2023 Vendicated and contributors
+ * Nightcord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import type { Settings } from "@api/Settings";
 import type { CspRequestResult } from "@main/csp/manager";
 import type { PluginIpcMappings } from "@main/ipcPlugins";
-import type { UserThemeHeader } from "@main/themes";
 import { IpcEvents } from "@shared/IpcEvents";
 import type { IpcRes } from "@utils/types";
-import { ipcRenderer } from "electron/renderer";
+import { ipcRenderer, webUtils } from "electron/renderer";
 
 export function invoke<T = any>(event: IpcEvents, ...args: any[]) {
     return ipcRenderer.invoke(event, ...args) as Promise<T>;
 }
 
 export function sendSync<T = any>(event: IpcEvents, ...args: any[]) {
-    return ipcRenderer.sendSync(event, ...args) as T;
+    try {
+        return ipcRenderer.sendSync(event, ...args) as T;
+    } catch {
+        return null as unknown as T;
+    }
 }
 
 const PluginHelpers = {} as Record<string, Record<string, (...args: any[]) => Promise<any>>>;
-const pluginIpcMap = sendSync<PluginIpcMappings>(IpcEvents.GET_PLUGIN_IPC_METHOD_MAP);
+let pluginIpcMap: PluginIpcMappings = {} as any;
+try {
+    pluginIpcMap = sendSync<PluginIpcMappings>(IpcEvents.GET_PLUGIN_IPC_METHOD_MAP) || ({} as any);
+} catch {}
 
-for (const [plugin, methods] of Object.entries(pluginIpcMap)) {
-    const map = PluginHelpers[plugin] = {};
-    for (const [methodName, method] of Object.entries(methods)) {
-        map[methodName] = (...args: any[]) => invoke(method as IpcEvents, ...args);
+if (pluginIpcMap && typeof pluginIpcMap === "object") {
+    for (const [plugin, methods] of Object.entries(pluginIpcMap)) {
+        if (!methods || typeof methods !== "object") continue;
+        const map = (PluginHelpers[plugin] = {} as Record<string, (...args: any[]) => Promise<any>>);
+        for (const [methodName, method] of Object.entries(methods)) {
+            map[methodName] = (...args: any[]) => invoke(method as IpcEvents, ...args);
+        }
     }
 }
 
@@ -35,13 +44,11 @@ export default {
         uploadTheme: async (fileName: string, fileData: string): Promise<void> => {
             throw new Error("uploadTheme is WEB only");
         },
-        deleteTheme: async (fileName: string): Promise<void> => {
-            throw new Error("deleteTheme is WEB only");
-        },
-        getThemesList: () => invoke<Array<UserThemeHeader>>(IpcEvents.GET_THEMES_LIST),
+        deleteTheme: (fileName: string) => invoke<void>(IpcEvents.DELETE_THEME, fileName),
+        getThemesDir: () => invoke<string>(IpcEvents.GET_THEMES_DIR),
+        getThemesList: () => invoke<Array<{ fileName: string; content: string; }>>(IpcEvents.GET_THEMES_LIST),
         getThemeData: (fileName: string) => invoke<string | undefined>(IpcEvents.GET_THEME_DATA, fileName),
         getSystemValues: () => invoke<Record<string, string>>(IpcEvents.GET_THEME_SYSTEM_VALUES),
-
         openFolder: () => invoke<void>(IpcEvents.OPEN_THEMES_FOLDER),
     },
 
@@ -50,12 +57,13 @@ export default {
         update: () => invoke<IpcRes<boolean>>(IpcEvents.UPDATE),
         rebuild: () => invoke<IpcRes<boolean>>(IpcEvents.BUILD),
         getRepo: () => invoke<IpcRes<string>>(IpcEvents.GET_REPO),
+        downloadAndRun: (url: string) => invoke<boolean>(IpcEvents.NIGHTCORD_DOWNLOAD_AND_RUN, url),
     },
 
     settings: {
-        get: () => sendSync<Settings>(IpcEvents.GET_SETTINGS),
+        get: () => sendSync<Settings>(IpcEvents.GET_SETTINGS) || ({ plugins: {} } as Settings),
         set: (settings: Settings, pathToNotify?: string) => invoke<void>(IpcEvents.SET_SETTINGS, settings, pathToNotify),
-
+        getSettingsDir: () => invoke<string>(IpcEvents.GET_SETTINGS_DIR),
         openFolder: () => invoke<void>(IpcEvents.OPEN_SETTINGS_FOLDER),
     },
 
@@ -66,39 +74,101 @@ export default {
         addChangeListener(cb: (newCss: string) => void) {
             ipcRenderer.on(IpcEvents.QUICK_CSS_UPDATE, (_, css) => cb(css));
         },
-
         addThemeChangeListener(cb: () => void) {
             ipcRenderer.on(IpcEvents.THEME_UPDATE, () => cb());
         },
-
         openFile: () => invoke<void>(IpcEvents.OPEN_QUICKCSS),
         openEditor: () => invoke<void>(IpcEvents.OPEN_MONACO_EDITOR),
-        getEditorTheme: () => sendSync<string>(IpcEvents.GET_MONACO_THEME),
+        getEditorTheme: () => sendSync<string>(IpcEvents.GET_MONACO_THEME) || "vs-dark",
     },
 
     native: {
         getVersions: () => process.versions as Partial<NodeJS.ProcessVersions>,
-        supportsWindowsMaterial: () => sendSync<boolean>(IpcEvents.SUPPORTS_WINDOWS_MATERIAL),
         openExternal: (url: string) => invoke<void>(IpcEvents.OPEN_EXTERNAL, url),
         getRendererCss: () => invoke<string>(IpcEvents.GET_RENDERER_CSS),
         onRendererCssUpdate: (cb: (newCss: string) => void) => {
             if (!IS_DEV) return;
-
             ipcRenderer.on(IpcEvents.RENDERER_CSS_UPDATE, (_e, newCss: string) => cb(newCss));
-        }
+        },
+        getPathForFile: (file: any): string => {
+            try {
+                if (webUtils?.getPathForFile) return webUtils.getPathForFile(file);
+            } catch { }
+            return file?.path || "";
+        },
     },
 
     csp: {
-        /**
-         * Note: Only supports full explicit matches, not wildcards.
-         *
-         * If `*.example.com` is allowed, `isDomainAllowed("https://sub.example.com")` will return false.
-         */
         isDomainAllowed: (url: string, directives: string[]) => invoke<boolean>(IpcEvents.CSP_IS_DOMAIN_ALLOWED, url, directives),
         removeOverride: (url: string) => invoke<boolean>(IpcEvents.CSP_REMOVE_OVERRIDE, url),
         requestAddOverride: (url: string, directives: string[], callerName: string) =>
             invoke<CspRequestResult>(IpcEvents.CSP_REQUEST_ADD_OVERRIDE, url, directives, callerName),
     },
 
-    pluginHelpers: PluginHelpers
+    tray: {
+        setUpdateState: (available: boolean) => ipcRenderer.send(IpcEvents.SET_TRAY_UPDATE_STATE, available),
+        onCheckUpdates: (cb: () => void) => { ipcRenderer.on(IpcEvents.TRAY_CHECK_UPDATES, cb); },
+        onRepair: (cb: () => void) => { ipcRenderer.on(IpcEvents.TRAY_REPAIR, cb); },
+    },
+
+    desktopCapture: {
+        getSources: () => invoke<Array<{ id: string; name: string; }>>(IpcEvents.GET_DESKTOP_SOURCES),
+    },
+
+    nightcord: {
+        getInstallerPrefs: () => sendSync<{defaultPlugins: boolean, autoUpdate: boolean}>(IpcEvents.GET_INSTALLER_PREFS) || { defaultPlugins: true, autoUpdate: true },
+        checkVBCable: () => invoke<{ installed: boolean; }>(IpcEvents.CHECK_VB_CABLE),
+        installVBCable: () => invoke<{ success: boolean; error?: string; }>(IpcEvents.INSTALL_VB_CABLE),
+        netFetch: (url: string, opts?: any) => invoke<{ ok: boolean; status: number; data: any; } | null>(IpcEvents.NIGHTCORD_NET_FETCH, url, opts),
+        relaunch: () => invoke<void>(IpcEvents.RELAUNCH_APP),
+    },
+
+    mellowtel: {
+        /** Persist the user's onboarding choice and forward it to the main-process SDK. */
+        setConsent: (accepted: boolean, onboardingVersion: string) =>
+            invoke<void>(IpcEvents.MELLOWTEL_SET_CONSENT, accepted, onboardingVersion),
+        /** Returns the last stored choice, or null if the user hasn't been asked yet. */
+        getConsent: () => sendSync<{ consent: "accepted" | "declined"; version: string; } | null>(IpcEvents.MELLOWTEL_GET_CONSENT),
+    },
+
+    pluginHelpers: PluginHelpers,
+
+    window: {
+        setBackgroundMaterial: (material: "none" | "acrylic" | "mica" | "tabbed") =>
+            invoke<void>(IpcEvents.SET_WINDOW_BACKGROUND_MATERIAL, material),
+        setThumbarButtons: (state: "playing" | "paused" | "stopped") =>
+            invoke<void>(IpcEvents.SET_THUMBAR_BUTTONS, state),
+        onThumbarClick: (cb: (action: "prev" | "play" | "pause" | "next") => void) => {
+            ipcRenderer.on(IpcEvents.THUMBAR_BUTTON_CLICK, (_e, action) => cb(action));
+        },
+        removeThumbarClickListener: () => {
+            ipcRenderer.removeAllListeners(IpcEvents.THUMBAR_BUTTON_CLICK);
+        },
+    },
+
+    worldBomb: {
+        type: (text: string, delay: number) => invoke(IpcEvents.WORLD_BOMB_TYPE, text, delay),
+        pressEnter: () => invoke(IpcEvents.WORLD_BOMB_PRESS_ENTER),
+        pressBackspace: () => invoke(IpcEvents.WORLD_BOMB_PRESS_BACKSPACE),
+        sequence: (word: string, lps: number, humanChance: number, targetX: number = -1, targetY: number = -1) =>
+            invoke(IpcEvents.WORLD_BOMB_SEQUENCE, word, lps, humanChance, targetX, targetY),
+        openWindow: (lps: number, humanChance: number, safeMode: boolean, theme: string, playMode: string, noSpace: boolean, groqKey: string, words: string[], streamProof: boolean) => invoke(IpcEvents.WORLD_BOMB_OPEN_WINDOW, lps, humanChance, safeMode, theme, playMode, noSpace, groqKey, words, streamProof),
+        closeWindow: () => invoke(IpcEvents.WORLD_BOMB_CLOSE_WINDOW),
+        getCursorPos: (): Promise<{ x: number; y: number; }> => invoke(IpcEvents.WORLD_BOMB_GET_CURSOR_POS),
+    },
+    setContentProtection: (enabled: boolean) =>
+        invoke<boolean>(IpcEvents.SET_CONTENT_PROTECTION, enabled),
+
+    userplugins: {
+        list: () => invoke<any[]>(IpcEvents.GET_USERPLUGINS),
+        compile: (name: string) => invoke<any>(IpcEvents.COMPILE_USERPLUGIN, name),
+        compileAll: () => invoke<any[]>(IpcEvents.COMPILE_ALL_USERPLUGINS),
+        openFolder: () => invoke<boolean>(IpcEvents.OPEN_USERPLUGINS_FOLDER),
+        addChangeListener: (cb: () => void) => {
+            ipcRenderer.on(IpcEvents.USERPLUGINS_CHANGED, () => cb());
+        },
+        removeChangeListener: () => {
+            ipcRenderer.removeAllListeners(IpcEvents.USERPLUGINS_CHANGED);
+        }
+    },
 };

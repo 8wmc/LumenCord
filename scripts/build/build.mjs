@@ -19,23 +19,25 @@
 
 // @ts-check
 
-import { readdir } from "fs/promises";
-import { join, resolve } from "path";
+import { createPackage } from "@electron/asar";
+import { readdir, writeFile } from "fs/promises";
+import { dirname, join, resolve } from "path";
+import { fileURLToPath } from "url";
 
-import { BUILD_TIMESTAMP, commonOpts, exists, globPlugins, IS_DEV, IS_REPORTER, IS_ANTI_CRASH_TEST, IS_STANDALONE, IS_UPDATER_DISABLED, resolvePluginName, VERSION, commonRendererPlugins, watch, buildOrWatchAll, stringifyValues, getMonacoEditorCdnUrl } from "./common.mjs";
+import { BUILD_TIMESTAMP, commonOpts, exists, globPlugins, IS_DEV, IS_REPORTER, IS_COMPANION_TEST, IS_STANDALONE, IS_UPDATER_DISABLED, resolvePluginName, VERSION, commonRendererPlugins, watch, buildOrWatchAll, stringifyValues, IS_ANTI_CRASH_TEST } from "./common.mjs";
 
 const defines = stringifyValues({
     IS_STANDALONE,
     IS_DEV,
     IS_REPORTER,
-    IS_ANTI_CRASH_TEST,
+    IS_COMPANION_TEST,
     IS_UPDATER_DISABLED,
+    IS_ANTI_CRASH_TEST,
     IS_WEB: false,
     IS_EXTENSION: false,
     IS_USERSCRIPT: false,
     VERSION,
-    BUILD_TIMESTAMP,
-    DESKTOP_MONACO_EDITOR_URL: await getMonacoEditorCdnUrl(),
+    BUILD_TIMESTAMP
 });
 
 if (defines.IS_STANDALONE === "false") {
@@ -53,7 +55,6 @@ const nodeCommonOpts = {
     format: "cjs",
     platform: "node",
     target: ["esnext"],
-    // @ts-expect-error this is never undefined
     external: ["electron", "original-fs", "~pluginNatives", ...commonOpts.external]
 };
 
@@ -75,7 +76,7 @@ const globNativesPlugin = {
         });
 
         build.onLoad({ filter, namespace: "import-natives" }, async () => {
-            const pluginDirs = ["plugins", "userplugins"];
+            const pluginDirs = ["plugins", "userplugins", "nightcordplugins"];
             let code = "";
             let natives = "\n";
             let i = 0;
@@ -121,8 +122,9 @@ const buildConfigs = ([
     // Discord Desktop main & renderer & preload
     {
         ...nodeCommonOpts,
-        entryPoints: ["src/main/index.ts"],
-        outfile: "dist/patcher.js",
+        entryPoints: [join(dirname(fileURLToPath(import.meta.url)), "../../src/main/index.ts")],
+        outfile: "dist/desktop/patcher.js",
+        metafile: true,
         footer: { js: "//# sourceURL=file:///VencordPatcher\n" + sourceMapFooter("patcher") },
         sourcemap,
         plugins: [
@@ -133,13 +135,14 @@ const buildConfigs = ([
         define: {
             ...defines,
             IS_DISCORD_DESKTOP: "true",
-            IS_VESKTOP: "false"
+            IS_VESKTOP: "false",
+            IS_EQUIBOP: "false"
         }
     },
     {
         ...commonOpts,
-        entryPoints: ["src/Vencord.ts"],
-        outfile: "dist/renderer.js",
+        entryPoints: [join(dirname(fileURLToPath(import.meta.url)), "../../src/Vencord.ts")],
+        outfile: "dist/desktop/renderer.js",
         format: "iife",
         target: ["esnext"],
         footer: { js: "//# sourceURL=file:///VencordRenderer\n" + sourceMapFooter("renderer") },
@@ -147,33 +150,35 @@ const buildConfigs = ([
         sourcemap,
         plugins: [
             globPlugins("discordDesktop"),
-            ...commonRendererPlugins
+            ...commonOpts.plugins
         ],
         define: {
             ...defines,
             IS_DISCORD_DESKTOP: "true",
-            IS_VESKTOP: "false"
+            IS_VESKTOP: "false",
+            IS_EQUIBOP: "false"
         }
     },
     {
         ...nodeCommonOpts,
-        entryPoints: ["src/preload.ts"],
-        outfile: "dist/preload.js",
+        entryPoints: [join(dirname(fileURLToPath(import.meta.url)), "../../src/preload.ts")],
+        outfile: "dist/desktop/preload.js",
         footer: { js: "//# sourceURL=file:///VencordPreload\n" + sourceMapFooter("preload") },
         sourcemap,
         define: {
             ...defines,
             IS_DISCORD_DESKTOP: "true",
-            IS_VESKTOP: "false"
+            IS_VESKTOP: "false",
+            IS_EQUIBOP: "false"
         }
     },
 
     // Vencord Desktop main & renderer & preload
     {
         ...nodeCommonOpts,
-        entryPoints: ["src/main/index.ts"],
-        outfile: "dist/vencordDesktopMain.js",
-        footer: { js: "//# sourceURL=file:///VencordDesktopMain\n" + sourceMapFooter("vencordDesktopMain") },
+        entryPoints: [join(dirname(fileURLToPath(import.meta.url)), "../../src/main/index.ts")],
+        outfile: "dist/nightcord/main.js",
+        footer: { js: "//# sourceURL=file:///VencordDesktopMain\n" + sourceMapFooter("main") },
         sourcemap,
         plugins: [
             ...nodeCommonOpts.plugins,
@@ -182,40 +187,96 @@ const buildConfigs = ([
         define: {
             ...defines,
             IS_DISCORD_DESKTOP: "false",
-            IS_VESKTOP: "true"
+            IS_VESKTOP: "false",
+            IS_EQUIBOP: "true"
         }
     },
     {
         ...commonOpts,
-        entryPoints: ["src/Vencord.ts"],
-        outfile: "dist/vencordDesktopRenderer.js",
+        entryPoints: [join(dirname(fileURLToPath(import.meta.url)), "../../src/Vencord.ts")],
+        outfile: "dist/nightcord/renderer.js",
         format: "iife",
         target: ["esnext"],
-        footer: { js: "//# sourceURL=file:///VencordDesktopRenderer\n" + sourceMapFooter("vencordDesktopRenderer") },
+        footer: { js: "//# sourceURL=file:///VencordDesktopRenderer\n" + sourceMapFooter("renderer") },
         globalName: "Vencord",
         sourcemap,
         plugins: [
-            globPlugins("vesktop"),
+            globPlugins("equibop"),
             ...commonRendererPlugins
         ],
         define: {
             ...defines,
             IS_DISCORD_DESKTOP: "false",
-            IS_VESKTOP: "true"
+            IS_VESKTOP: "false",
+            IS_EQUIBOP: "true"
         }
     },
     {
         ...nodeCommonOpts,
-        entryPoints: ["src/preload.ts"],
-        outfile: "dist/vencordDesktopPreload.js",
-        footer: { js: "//# sourceURL=file:///VencordPreload\n" + sourceMapFooter("vencordDesktopPreload") },
+        entryPoints: [join(dirname(fileURLToPath(import.meta.url)), "../../src/preload.ts")],
+        outfile: "dist/nightcord/preload.js",
+        footer: { js: "//# sourceURL=file:///VencordPreload\n" + sourceMapFooter("preload") },
         sourcemap,
         define: {
             ...defines,
             IS_DISCORD_DESKTOP: "false",
-            IS_VESKTOP: "true"
+            IS_VESKTOP: "false",
+            IS_EQUIBOP: "true"
         }
     }
 ]);
 
 await buildOrWatchAll(buildConfigs);
+
+await Promise.all([
+    writeFile("dist/desktop/package.json", JSON.stringify({
+        name: "nightcord",
+        main: "patcher.js"
+    })),
+    writeFile("dist/nightcord/package.json", JSON.stringify({
+        name: "nightcord",
+        main: "main.js"
+    }))
+]);
+
+// Copy multi-instance icons from assets to dist
+try {
+    const { cp } = await import("fs/promises");
+    const iconsSrc = join(dirname(fileURLToPath(import.meta.url)), "../../assets/multi-instance-icons");
+    if (await exists(iconsSrc)) {
+        await Promise.all([
+            cp(iconsSrc, "dist/desktop/multi-instance-icons", { recursive: true }),
+            cp(iconsSrc, "dist/nightcord/multi-instance-icons", { recursive: true })
+        ]);
+    }
+} catch { }
+
+await Promise.all([
+    createPackage("dist/desktop", "dist/desktop.asar"),
+    createPackage("dist/nightcord", "dist/nightcord.asar"),
+]);
+
+// Automatically mirror dist/desktop to LocalAppData/Nightcord/dist if it exists
+try {
+    const localAppData = process.env.LOCALAPPDATA;
+    if (localAppData) {
+        const targetDir = join(localAppData, "Nightcord", "dist");
+        if (await exists(targetDir)) {
+            const { copyFile } = await import("fs/promises");
+            const files = ["patcher.js", "preload.js", "renderer.js", "renderer.css", "package.json"];
+            for (const file of files) {
+                const src = join("dist", "desktop", file);
+                const dest = join(targetDir, file);
+                if (await exists(src)) {
+                    await copyFile(src, dest);
+                }
+            }
+        }
+    }
+} catch { }
+
+// Automatically ensure all Discord installations are injected
+try {
+    const { execSync } = await import("child_process");
+    execSync("node scripts/inject.mjs", { stdio: "ignore" });
+} catch { }

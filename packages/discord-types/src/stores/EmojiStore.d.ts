@@ -413,11 +413,6 @@ export class EmojiStore extends FluxStore {
      */
     getUsableGuildEmoji(guildId?: string | null): CustomEmoji[];
     /**
-     * Gets ids of custom emojis hidden in a guild.
-     * @param guildId Guild id to get hidden emoji ids for.
-     */
-    getHiddenEmojiIds(guildId?: string | null): Set<string>;
-    /**
      * Gets newly added emojis for a guild.
      * @param guildId Guild id to get emojis for.
      * @returns Array of newly added custom emojis.
@@ -451,15 +446,8 @@ export class EmojiStore extends FluxStore {
      * @returns True if user has usable emojis.
      */
     hasUsableEmojiInAnyGuild(): boolean;
-    /**
-     * Orders emoji search results by match quality and frecency.
-     * @param emojis Emojis to order.
-     * @param query Search query.
-     * @param count Max results, 0 for no limit.
-     * @param intention Where the emoji will be used, picks reaction or chat frecency.
-     * @returns Ordered emojis.
-     */
-    getSearchResultsOrder<T extends Emoji>(emojis: T[], query: string, count: number, intention: EmojiIntention): T[];
+    /** Internal method for ordering search results. */
+    getSearchResultsOrder(...args: any[]): any;
     /**
      * Gets the serializable state for persistence.
      * @returns Current store state.

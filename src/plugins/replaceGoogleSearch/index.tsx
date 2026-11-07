@@ -5,8 +5,8 @@
  */
 
 import { findGroupChildrenByChildId, NavContextMenuPatchCallback } from "@api/ContextMenu";
-import { definePluginSettings } from "@api/Settings";
-import { SearchIcon } from "@components/Icons";
+import { definePluginSettings, migratePluginSettings } from "@api/Settings";
+import { Flex } from "@components/Flex";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
 import { Menu } from "@webpack/common";
@@ -89,7 +89,6 @@ function makeSearchItem(src: string) {
             label="Search Text"
             key="search-text"
             id="vc-search-text"
-            leadingAccessory={{ type: "icon", icon: SearchIcon }}
         >
             {Object.keys(Engines).map(engine => {
                 const key = "vc-search-content-" + engine;
@@ -97,8 +96,20 @@ function makeSearchItem(src: string) {
                     <Menu.MenuItem
                         key={key}
                         id={key}
-                        label={engine}
-                        leadingAccessory={{ type: "image", src: `https://icons.duckduckgo.com/ip3/${new URL(Engines[engine]).hostname}.ico` }}
+                        label={
+                            <Flex gap="0.5em" alignItems="center">
+                                <img
+                                    style={{
+                                        borderRadius: "50%"
+                                    }}
+                                    aria-hidden="true"
+                                    height={16}
+                                    width={16}
+                                    src={`https://icons.duckduckgo.com/ip3/${new URL(Engines[engine]).hostname}.ico`}
+                                />
+                                {engine}
+                            </Flex>
+                        }
                         action={() => search(src, Engines[engine])}
                     />
                 );
@@ -118,6 +129,7 @@ const messageContextMenuPatch: NavContextMenuPatchCallback = (children, _props) 
     }
 };
 
+migratePluginSettings("ReplaceGoogleSearch", "Search");
 export default definePlugin({
     name: "ReplaceGoogleSearch",
     description: "Replaces the Google search with different Engine(s)",

@@ -21,10 +21,10 @@ import { Review, ReviewType } from "@plugins/reviewDB/entities";
 import { blockUser, deleteReview, deleteReviewVote, reportReview, unblockUser, voteReview } from "@plugins/reviewDB/reviewDbApi";
 import { settings } from "@plugins/reviewDB/settings";
 import { canBlockReviewAuthor, canDeleteReview, canReportReview, cl, showToast } from "@plugins/reviewDB/utils";
-import { confirmAction, openUserProfile } from "@utils/discord";
+import { openUserProfile } from "@utils/discord";
 import { classes } from "@utils/misc";
 import { findCssClassesLazy } from "@webpack";
-import { IconUtils, Parser, Timestamp, useEffect, useState } from "@webpack/common";
+import { ConfirmModal, IconUtils, openModal as openVencordModal, Parser, Timestamp, useEffect, useState } from "@webpack/common";
 
 import { openBlockModal } from "./BlockedUserModal";
 import { BlockButton, DeleteButton, ReportButton } from "./MessageButton";
@@ -37,8 +37,6 @@ const ButtonClasses = findCssClassesLazy("button", "wrapper", "selected");
 const BotTagClasses = findCssClassesLazy("botTagVerified", "botTagRegular", "botText", "px", "rem");
 
 const dateFormat = new Intl.DateTimeFormat();
-
-const ensureToken = async () => await getToken() || showToast({ text: "You must be logged in to perform this action!", variant: "critical" });
 
 export default function ReviewComponent({ review, refetch, profileId }: { review: Review; refetch(): void; profileId: string; }) {
     const [showAll, setShowAll] = useState(false);
@@ -55,59 +53,71 @@ export default function ReviewComponent({ review, refetch, profileId }: { review
         openUserProfile(review.sender.discordID);
     }
 
-    async function delReview() {
-        if (!await ensureToken()) return;
-
-        await confirmAction({
-            title: "Are you sure?",
-            subtitle: "Do you really want to delete this review?",
-            confirmText: "Delete",
-            cancelText: "Nevermind",
-            async onConfirm() {
-                const res = await deleteReview(review.id);
-                if (res) refetch();
-            },
-        });
+    function delReview() {
+        openVencordModal(props => (
+            <ConfirmModal
+                {...props}
+                title="Are you sure?"
+                subtitle="Do you really want to delete this review?"
+                confirmText="Delete"
+                cancelText="Nevermind"
+                onConfirm={async () => {
+                    if (!(await getToken())) {
+                        return showToast("You must be logged in to delete reviews.");
+                    }
+                    const res = await deleteReview(review.id);
+                    if (res) refetch();
+                }}
+            />
+        ));
     }
 
-    async function reportRev() {
-        if (!await ensureToken()) return;
-
-        await confirmAction({
-            title: "Are you sure?",
-            subtitle: "Do you really want to report this review?",
-            confirmText: "Report",
-            cancelText: "Nevermind",
-            async onConfirm() {
-                await reportReview(review.id);
-            },
-        });
+    function reportRev() {
+        openVencordModal(props => (
+            <ConfirmModal
+                {...props}
+                title="Are you sure?"
+                subtitle="Do you really want to report this review?"
+                confirmText="Report"
+                cancelText="Nevermind"
+                onConfirm={async () => {
+                    if (!(await getToken())) {
+                        return showToast("You must be logged in to report reviews.");
+                    }
+                    await reportReview(review.id);
+                }}
+            />
+        ));
     }
 
     const isAuthorBlocked = Auth?.user?.blockedUsers?.includes(review.sender.discordID) ?? false;
 
-    async function blockReviewSender() {
-        if (!await ensureToken()) return;
-
+    function blockReviewSender() {
         if (isAuthorBlocked)
             return unblockUser(review.sender.discordID);
 
-        await confirmAction({
-            title: "Are you sure?",
-            subtitle: "Do you really want to block this user? They will be unable to leave further reviews on your profile. You can unblock users in the plugin settings.",
-            confirmText: "Block",
-            cancelText: "Nevermind",
-            async onConfirm() {
-                await blockUser(review.sender.discordID);
-            },
-        });
+        openVencordModal(props => (
+            <ConfirmModal
+                {...props}
+                title="Are you sure?"
+                subtitle="Do you really want to block this user? They will be unable to leave further reviews on your profile. You can unblock users in the plugin settings."
+                confirmText="Block"
+                cancelText="Nevermind"
+                onConfirm={async () => {
+                    if (!(await getToken())) {
+                        return showToast("You must be logged in to block users.");
+                    }
+                    await blockUser(review.sender.discordID);
+                }}
+            />
+        ));
     }
 
     async function submitVote(isUpvote: boolean) {
         if (isVoting) return;
 
         if (review.sender.discordID === Auth.user?.discordID) {
-            return showToast({ text: "You cannot vote on your own review.", variant: "critical" });
+            return showToast("You cannot vote on your own review.");
         }
 
         setIsVoting(true);

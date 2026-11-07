@@ -1,92 +1,160 @@
 /*
- * Vencord, a modification for Discord's desktop app
- * Copyright (c) 2022 Vendicated and contributors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
+ * Vencord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 
 import { fetchBuffer, fetchJson } from "@main/utils/http";
 import { IpcEvents } from "@shared/IpcEvents";
 import { VENCORD_USER_AGENT } from "@shared/vencordUserAgent";
-import { ipcMain } from "electron";
-import { writeFile } from "fs/promises";
+import { exec } from "child_process";
+import { app, ipcMain } from "electron";
+import { existsSync, mkdirSync, promises as fsp, readFileSync, rmSync, writeFileSync } from "original-fs";
 import { join } from "path";
+import { serializeErrors } from "./common";
+import { copyDirectorySync } from "./pendingUpdate";
 
-import gitHash from "~git-hash";
-import gitRemote from "~git-remote";
+// LumenCord: updates come only from the 8wmc/LumenCord GitHub releases.
+const API_BASE = "https://api.github.com/repos/8wmc/LumenCord";
+const REPO_URL = "https://github.com/8wmc/LumenCord";
+declare const VERSION: string;
+const CURRENT_VERSION = `v${VERSION}`;
+const ZIP_FILE = "lumencord-dist.zip";
 
-import { serializeErrors, VENCORD_FILES } from "./common";
+/**
+ * Marker file written into __dirname when an update has been staged.
+ * nightcord-index.js reads this on next startup (before any file is locked)
+ * and performs the actual file-swap then.
+ */
+export const PENDING_UPDATE_MARKER = join(__dirname, "nightcord-pending-update.json");
+const STAGING_DIR = join(app.getPath("temp"), "nightcord-pending-update");
 
-const API_BASE = `https://api.github.com/repos/${gitRemote}`;
-let PendingUpdates = [] as [string, string][];
+let pendingDownloadUrl: string | null = null;
+let pendingVersion: string | null = null;
+let isApplying = false;
 
-async function githubGet<T = any>(endpoint: string) {
+async function githubGet<T = any>(endpoint: string): Promise<T> {
     return fetchJson<T>(API_BASE + endpoint, {
         headers: {
-            Accept: "application/vnd.github+json",
-            // "All API requests MUST include a valid User-Agent header.
-            // Requests with no User-Agent header will be rejected."
+            Accept: "application/json",
             "User-Agent": VENCORD_USER_AGENT
         }
     });
 }
 
-async function calculateGitChanges() {
-    const isOutdated = await fetchUpdates();
-    if (!isOutdated) return [];
-
-    const data = await githubGet(`/compare/${gitHash}...HEAD`);
-
-    return data.commits.map((c: any) => ({
-        // github api only sends the long sha
-        hash: c.sha.slice(0, 7),
-        author: c.author?.login ?? c.commit?.author?.name ?? "Unknown Author",
-        message: c.commit.message.split("\n")[0]
-    }));
+function isNewer(a: string, b: string): boolean {
+    const parse = (v: string) => v.replace(/^v/, "").split(".").map(n => parseInt(n, 10) || 0);
+    const av = parse(a), bv = parse(b);
+    for (let i = 0; i < Math.max(av.length, bv.length); i++) {
+        if ((bv[i] ?? 0) > (av[i] ?? 0)) return true;
+        if ((bv[i] ?? 0) < (av[i] ?? 0)) return false;
+    }
+    return false;
 }
 
-async function fetchUpdates() {
+async function fetchUpdates(): Promise<boolean> {
     const data = await githubGet("/releases/latest");
+    // The release tag is always "latest"; the build workflow puts the real version (e.g. v1.31.6) in the release title.
+    const titleVersion = /v?\d+(\.\d+)+/.exec(data.name ?? "")?.[0];
+    const latestTag: string = titleVersion ?? data.tag_name ?? "";
 
-    const hash = data.name.slice(data.name.lastIndexOf(" ") + 1);
-    if (hash === gitHash)
-        return false;
+    if (!latestTag || !isNewer(CURRENT_VERSION, latestTag)) return false;
 
-    data.assets.forEach(({ name, browser_download_url }) => {
-        if (VENCORD_FILES.some(s => name.startsWith(s))) {
-            PendingUpdates.push([name, browser_download_url]);
-        }
-    });
-
-    return true;
-}
-
-async function applyUpdates() {
-    const fileContents = await Promise.all(PendingUpdates.map(async ([name, url]) => {
-        const contents = await fetchBuffer(url);
-        return [join(__dirname, name), contents] as const;
-    }));
-
-    await Promise.all(fileContents.map(async ([filename, contents]) =>
-        writeFile(filename, contents))
+    const asset = (data.assets as any[])?.find(
+        (a: any) => a.name === ZIP_FILE
     );
+    if (!asset) return false;
 
-    PendingUpdates = [];
+    pendingDownloadUrl = asset.browser_download_url;
+    pendingVersion = latestTag;
     return true;
 }
 
-ipcMain.handle(IpcEvents.GET_REPO, serializeErrors(() => `https://github.com/${gitRemote}`));
-ipcMain.handle(IpcEvents.GET_UPDATES, serializeErrors(calculateGitChanges));
+async function getUpdates() {
+    const outdated = await fetchUpdates();
+    if (!outdated) return [];
+    return [{
+        hash: pendingVersion ?? "new",
+        author: "LumenCord",
+        message: `New version available: ${pendingVersion}`
+    }];
+}
+
+/**
+ * Step 1 — download the zip and stage it to a temp folder.
+ * Does NOT touch any running files. Returns true when the zip is staged.
+ */
+async function stageUpdate(): Promise<boolean> {
+    // If update is already staged for this version on disk, skip redundant download
+    if (existsSync(PENDING_UPDATE_MARKER)) {
+        try {
+            const marker = JSON.parse(readFileSync(PENDING_UPDATE_MARKER, "utf-8"));
+            if (marker.stagingDir && existsSync(marker.stagingDir)) {
+                if (!pendingVersion || marker.version === pendingVersion) {
+                    console.log(`[NightcordUpdater] Update ${marker.version} is already staged on disk. Skipping download.`);
+                    pendingDownloadUrl = null;
+                    pendingVersion = null;
+                    return true;
+                }
+            }
+        } catch { }
+    }
+
+    if (!pendingDownloadUrl) return false;
+    if (isApplying) return false;
+    isApplying = true;
+
+    try {
+        const data = await fetchBuffer(pendingDownloadUrl);
+
+        // Save zip to temp
+        const zipPath = join(app.getPath("temp"), `nightcord-update-${Date.now()}.zip`);
+        await fsp.writeFile(zipPath, data);
+
+        // Clean any stale staging dir first
+        try { rmSync(STAGING_DIR, { recursive: true, force: true }); } catch { }
+        mkdirSync(STAGING_DIR, { recursive: true });
+
+        return await new Promise<boolean>((resolve, reject) => {
+            const extractCmd = process.platform === "win32"
+                ? `powershell -NoProfile -NonInteractive -Command "Expand-Archive -LiteralPath '${zipPath}' -DestinationPath '${STAGING_DIR}' -Force"`
+                : `unzip -o -q "${zipPath}" -d "${STAGING_DIR}"`;
+
+            exec(extractCmd, async err => {
+                // Cleanup zip regardless
+                try { rmSync(zipPath, { force: true }); } catch { }
+
+                if (err) {
+                    return reject(new Error("ZIP extraction failed: " + err.message));
+                }
+
+                // Attempt immediate copy for non-locked files (renderer, css, preload)
+                copyDirectorySync(STAGING_DIR, __dirname);
+
+                // Write marker so patcher.ts double-checks and finalizes on next boot
+                try {
+                    await fsp.writeFile(PENDING_UPDATE_MARKER, JSON.stringify({
+                        version: pendingVersion,
+                        stagingDir: STAGING_DIR,
+                        destDir: __dirname,
+                        createdAt: Date.now()
+                    }));
+                } catch (markerErr) {
+                    return reject(markerErr);
+                }
+
+                pendingDownloadUrl = null;
+                pendingVersion = null;
+                resolve(true);
+            });
+        });
+    } finally {
+        isApplying = false;
+    }
+}
+
+ipcMain.handle(IpcEvents.GET_REPO, serializeErrors(() => REPO_URL));
+ipcMain.handle(IpcEvents.GET_UPDATES, serializeErrors(getUpdates));
 ipcMain.handle(IpcEvents.UPDATE, serializeErrors(fetchUpdates));
-ipcMain.handle(IpcEvents.BUILD, serializeErrors(applyUpdates));
+// BUILD is now "stage update" — actual file swap happens on next startup via nightcord-index.js
+ipcMain.handle(IpcEvents.BUILD, serializeErrors(stageUpdate));

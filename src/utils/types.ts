@@ -16,17 +16,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { ProfileBadge } from "@api/Badges";
-import { ChatBarButtonData } from "@api/ChatButtons";
-import { NavContextMenuPatchCallback } from "@api/ContextMenu";
-import { MemberListDecoratorFactory } from "@api/MemberListDecorators";
-import { MessageAccessoryFactory } from "@api/MessageAccessories";
-import { MessageDecorationFactory } from "@api/MessageDecorations";
-import { MessageClickListener, MessageEditListener, MessageSendListener } from "@api/MessageEvents";
-import { MessagePopoverButtonData } from "@api/MessagePopover";
-import { Command, FluxEvents } from "@vencord/discord-types";
-import { ReactNode } from "react";
-import { LiteralUnion } from "type-fest";
+import type { AudioProcessor } from "@api/AudioPlayer";
+import type { ProfileBadge } from "@api/Badges";
+import type { ChatBarButtonData, ChatBarButtonFactory } from "@api/ChatButtons";
+import type { NavContextMenuPatchCallback } from "@api/ContextMenu";
+import type { HeaderBarButtonData } from "@api/HeaderBar";
+import type { MemberListDecoratorFactory } from "@api/MemberListDecorators";
+import type { MessageAccessoryFactory } from "@api/MessageAccessories";
+import type { MessageDecorationFactory } from "@api/MessageDecorations";
+import type { MessageClickListener, MessageEditListener, MessageSendListener } from "@api/MessageEvents";
+import type { MessagePopoverButtonData, MessagePopoverButtonFactory } from "@api/MessagePopover";
+import type { NicknameIconFactory } from "@api/NicknameIcons";
+import type { UserAreaButtonData } from "@api/UserArea";
+import type { Command, FluxEvents } from "@vencord/discord-types";
+import type { ReactNode } from "react";
+import type { LiteralUnion } from "type-fest";
 
 // exists to export default definePlugin({...})
 export default function definePlugin<P extends PluginDef>(p: P & Record<PropertyKey, any>) {
@@ -40,32 +44,6 @@ export function makeRange(start: number, end: number, step = 1) {
     }
     return ranges;
 }
-
-export const PluginTags = [
-    "Accessibility",
-    "Activity",
-    "Appearance",
-    "Chat",
-    "Commands",
-    "Console",
-    "Customisation",
-    "Developers",
-    "Emotes",
-    "Friends",
-    "Fun",
-    "Media",
-    "Notifications",
-    "Organisation",
-    "Privacy",
-    "Reactions",
-    "Roles",
-    "Servers",
-    "Shortcuts",
-    "Utility",
-    "Voice"
-] as const;
-
-export type PluginTag = typeof PluginTags[number];
 
 export type ReplaceFn = (match: string, ...groups: string[]) => string;
 
@@ -126,9 +104,7 @@ export type IconProps = { height?: number | string; width?: number | string; cla
 export interface PluginDef {
     name: string;
     description: string;
-    /** Additional search terms that will bring up your plugin */
-    searchTerms?: string[];
-    tags?: PluginTag[];
+    detailedDescription?: string;
     authors: PluginAuthor[];
     start?(): void;
     stop?(): void;
@@ -160,6 +136,10 @@ export interface PluginDef {
      */
     requiresRestart?: boolean;
     /**
+     * Whether this plugin is a premium-only feature
+     */
+    premium?: boolean;
+    /**
      * When to call the start() method
      * @default StartAt.WebpackReady
      */
@@ -168,6 +148,12 @@ export interface PluginDef {
      * Which parts of the plugin can be tested by the reporter. Defaults to all parts
      */
     reporterTestable?: number;
+    /**
+     * Optionally provide settings that the user can configure in the Plugins tab of settings.
+     * @deprecated Use `settings` instead
+     */
+    // TODO: Remove when everything is migrated to `settings`
+    options?: Record<string, PluginOptionsItem>;
     /**
      * Optionally provide settings that the user can configure in the Plugins tab of settings.
      */
@@ -200,12 +186,20 @@ export interface PluginDef {
      */
     toolboxActions?: Record<string, () => void> | (() => ReactNode);
 
+    tags?: string[];
+
+    /**
+     * URL of the video tutorial for this plugin
+     */
+    videoTutorial?: string;
+
     /**
      * Managed style to automatically enable and disable when the plugin is enabled or disabled
      */
     managedStyle?: string;
 
     userProfileBadge?: ProfileBadge;
+    userProfileBadges?: ProfileBadge[];
 
     messagePopoverButton?: MessagePopoverButtonData;
     chatBarButton?: ChatBarButtonData;
@@ -218,6 +212,27 @@ export interface PluginDef {
     renderMessageDecoration?: MessageDecorationFactory;
 
     renderMemberListDecorator?: MemberListDecoratorFactory;
+
+    // Custom
+    renderNicknameIcon?: NicknameIconFactory;
+    headerBarButton?: HeaderBarButtonData;
+    audioProcessor?: AudioProcessor;
+    userAreaButton?: UserAreaButtonData;
+
+    // TODO: Remove eventually
+    /**
+     * @deprecated Use {@link chatBarButton} instead
+     */
+    renderChatBarButton?: ChatBarButtonFactory;
+    /**
+     * @deprecated Use {@link messagePopoverButton} instead
+     */
+    renderMessagePopoverButton?: MessagePopoverButtonFactory;
+
+    /**
+     * A Vencord plugin that is modified for extra features in Equicord
+     */
+    isModified?: boolean;
 }
 
 export const enum StartAt {
@@ -253,23 +268,23 @@ export const enum OptionType {
 
 export type SettingsDefinition = Record<string, PluginSettingDef>;
 export type SettingsChecks<D extends SettingsDefinition> = {
-    [K in keyof D]?: D[K] extends PluginSettingComponentDef ? IsDisabledOrHidden<DefinedSettings<D>> :
-    (IsDisabledOrHidden<DefinedSettings<D>> & IsValid<PluginSettingType<D[K]>, DefinedSettings<D>>);
+    [K in keyof D]?: D[K] extends PluginSettingComponentDef ? IsDisabled<DefinedSettings<D>> :
+    (IsDisabled<DefinedSettings<D>> & IsValid<PluginSettingType<D[K]>, DefinedSettings<D>>);
 };
 
 export type PluginSettingDef =
-    | PluginSettingCustomDef
-    | PluginSettingComponentDef
-    | PluginSettingStringDef
-    | PluginSettingNumberDef
-    | PluginSettingBooleanDef
-    | PluginSettingSelectDef
-    | PluginSettingSliderDef
-    | PluginSettingBigIntDef;
+    (PluginSettingCommon & PluginSettingCustomDef & Pick<PluginSettingCommon, "onChange">) |
+    (PluginSettingComponentDef & Omit<PluginSettingCommon, "description" | "placeholder">) | ((
+        | PluginSettingStringDef
+        | PluginSettingNumberDef
+        | PluginSettingBooleanDef
+        | PluginSettingSelectDef
+        | PluginSettingSliderDef
+        | PluginSettingBigIntDef
+    ) & PluginSettingCommon);
 
-export interface PluginSettingDefCommon extends IsDisabledOrHidden, IsValid<unknown> {
+export interface PluginSettingCommon {
     description: string;
-    displayName?: string;
     placeholder?: string;
     onChange?(newValue: any): void;
     /**
@@ -278,49 +293,49 @@ export interface PluginSettingDefCommon extends IsDisabledOrHidden, IsValid<unkn
     restartNeeded?: boolean;
     componentProps?: Record<string, any>;
     /**
+     * Hide this setting from the settings UI
+     */
+    hidden?: boolean;
+    /**
      * Set this if the setting only works on Browser or Desktop, not both
      */
     target?: "WEB" | "DESKTOP" | "BOTH";
 }
 
-interface IsDisabledOrHidden<D extends DefinedSettings = DefinedSettings> {
+interface IsDisabled<D = unknown> {
     /**
-     * Whether this setting should be disabled
+     * Checks if this setting should be disabled
      */
-    disabled?: boolean | ((this: D) => boolean);
-    /**
-     * Whether this setting should be hidden from the user
-     */
-    hidden?: boolean | ((this: D) => boolean);
+    disabled?(this: D): boolean;
 }
 
-interface IsValid<T, D extends DefinedSettings = DefinedSettings> {
+interface IsValid<T, D = unknown> {
     /**
-     * Whether the value the user provided is valid. Either return a boolean for a generic error message or a string for a custom error message.
+     * Prevents the user from saving settings if this is false or a string
      */
     isValid?(this: D, value: T): boolean | string;
 }
 
-export interface PluginSettingStringDef extends PluginSettingDefCommon {
+export interface PluginSettingStringDef {
     type: OptionType.STRING;
     default?: string;
     /** Whether to use a multiline text area */
     multiline?: boolean;
 }
-export interface PluginSettingNumberDef extends PluginSettingDefCommon {
+export interface PluginSettingNumberDef {
     type: OptionType.NUMBER;
     default?: number;
 }
-export interface PluginSettingBigIntDef extends PluginSettingDefCommon {
+export interface PluginSettingBigIntDef {
     type: OptionType.BIGINT;
     default?: BigInt;
 }
-export interface PluginSettingBooleanDef extends PluginSettingDefCommon {
+export interface PluginSettingBooleanDef {
     type: OptionType.BOOLEAN;
     default?: boolean;
 }
 
-export interface PluginSettingSelectDef extends PluginSettingDefCommon {
+export interface PluginSettingSelectDef {
     type: OptionType.SELECT;
     options: readonly PluginSettingSelectOption[];
 }
@@ -334,10 +349,9 @@ export interface PluginSettingSelectOption {
 export interface PluginSettingCustomDef {
     type: OptionType.CUSTOM;
     default?: any;
-    onChange?: PluginSettingDefCommon["onChange"];
 }
 
-export interface PluginSettingSliderDef extends PluginSettingDefCommon {
+export interface PluginSettingSliderDef {
     type: OptionType.SLIDER;
     /**
      * All the possible values in the slider. Needs at least two values.
@@ -353,22 +367,23 @@ export interface PluginSettingSliderDef extends PluginSettingDefCommon {
     stickToMarkers?: boolean;
 }
 
-export interface PluginSettingComponentDef extends Omit<PluginSettingDefCommon, "description" | "placeholder" | "displayName"> {
-    type: OptionType.COMPONENT;
-    component: (props: PluginSettingComponentProps) => ReactNode | Promise<ReactNode>;
-    default?: any;
-}
-export interface PluginSettingComponentProps {
+export interface IPluginOptionComponentProps {
     /**
      * Run this when the value changes.
+     *
+     * NOTE: The user will still need to click save to apply these changes.
      */
     setValue(newValue: any): void;
     /**
      * The options object
      */
     option: PluginSettingComponentDef;
-    /** Close the plugin settings modal */
-    closePluginSettings(): void;
+}
+
+export interface PluginSettingComponentDef {
+    type: OptionType.COMPONENT;
+    component: (props: IPluginOptionComponentProps) => ReactNode | Promise<ReactNode>;
+    default?: any;
 }
 
 /** Maps a `PluginSettingDef` to its value type */
@@ -393,31 +408,55 @@ type SettingsStore<D extends SettingsDefinition> = {
 /** An instance of defined plugin settings */
 export interface DefinedSettings<
     Def extends SettingsDefinition = SettingsDefinition,
+    Checks extends SettingsChecks<Def> = {},
     PrivateSettings extends object = {}
 > {
-    /** Definitions of each setting */
-    def: Def;
-    /** Reactive Read/Write settings store - This is a Proxy, use .plain for a plain object */
+    /** Shorthand for `Vencord.Settings.plugins.PluginName`, but with typings */
     store: SettingsStore<Def> & PrivateSettings;
-    /** Pure Read-only settings object */
+    /** Shorthand for `Vencord.PlainSettings.plugins.PluginName`, but with typings */
     plain: SettingsStore<Def> & PrivateSettings;
     /**
      * React hook for getting the settings for this plugin
-     * @param filter optional filter to avoid rerenders for irrelevant settings
+     * @param filter optional filter to avoid rerenders for irrelevent settings
      */
     use<F extends Extract<keyof Def | keyof PrivateSettings, string>>(filter?: F[]): Pick<SettingsStore<Def> & PrivateSettings, F>;
+    /** Definitions of each setting */
+    def: Def;
+    /** Setting methods with return values that could rely on other settings */
+    checks: Checks;
     /**
      * Name of the plugin these settings belong to,
      * will be an empty string until plugin is initialized
      */
     pluginName: string;
-    /** Extend this Settings object type with more properties, useful for non-user-facing settings */
-    withPrivateSettings<T extends object>(): DefinedSettings<Def, T>;
+
+    withPrivateSettings<T extends object>(): DefinedSettings<Def, Checks, T>;
 }
 
 export type PartialExcept<T, R extends keyof T> = Partial<T> & Required<Pick<T, R>>;
 
 export type IpcRes<V = any> = { ok: true; value: V; } | { ok: false, error: any; };
+
+/* -------------------------------------------- */
+/*             Legacy Options Types             */
+/* -------------------------------------------- */
+
+export type PluginOptionBase = PluginSettingCommon & IsDisabled;
+export type PluginOptionsItem =
+    | PluginOptionString
+    | PluginOptionNumber
+    | PluginOptionBoolean
+    | PluginOptionSelect
+    | PluginOptionSlider
+    | PluginOptionComponent
+    | PluginOptionCustom;
+export type PluginOptionString = PluginSettingStringDef & PluginSettingCommon & IsDisabled & IsValid<string>;
+export type PluginOptionNumber = (PluginSettingNumberDef | PluginSettingBigIntDef) & PluginSettingCommon & IsDisabled & IsValid<number | BigInt>;
+export type PluginOptionBoolean = PluginSettingBooleanDef & PluginSettingCommon & IsDisabled & IsValid<boolean>;
+export type PluginOptionSelect = PluginSettingSelectDef & PluginSettingCommon & IsDisabled & IsValid<PluginSettingSelectOption>;
+export type PluginOptionSlider = PluginSettingSliderDef & PluginSettingCommon & IsDisabled & IsValid<number>;
+export type PluginOptionComponent = PluginSettingComponentDef & Omit<PluginSettingCommon, "description" | "placeholder">;
+export type PluginOptionCustom = PluginSettingCustomDef & Pick<PluginSettingCommon, "onChange">;
 
 export type PluginNative<PluginExports extends Record<string, (event: Electron.IpcMainInvokeEvent, ...args: any[]) => any>> = {
     [key in keyof PluginExports]:
@@ -427,9 +466,3 @@ export type PluginNative<PluginExports extends Record<string, (event: Electron.I
 };
 
 export type AllOrNothing<T> = T | { [K in keyof T]?: never; };
-
-export type ConstEnumToRuntimeEnum<T> = {
-    [K in keyof T as T[K] extends number ? T[K] : never]: K;
-} & {
-    [K in keyof T]: T[K];
-};

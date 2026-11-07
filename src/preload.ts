@@ -22,21 +22,27 @@ import { contextBridge, webFrame } from "electron/renderer";
 
 import VencordNative, { invoke, sendSync } from "./VencordNative";
 
+contextBridge.exposeInMainWorld("VencordNative", VencordNative);
+contextBridge.exposeInMainWorld("EquicordNative", VencordNative);
+contextBridge.exposeInMainWorld("NightcordNative", VencordNative);
 
-// Monaco popout
-if (location.href === DESKTOP_MONACO_EDITOR_URL) {
-    contextBridge.exposeInMainWorld("setCss", debounce(VencordNative.quickCss.set));
-    contextBridge.exposeInMainWorld("getCurrentCss", VencordNative.quickCss.get);
-    contextBridge.exposeInMainWorld("getTheme", VencordNative.quickCss.getEditorTheme);
-}
 // Discord
-else {
-    contextBridge.exposeInMainWorld("VencordNative", VencordNative);
+if (location.protocol !== "data:") {
     invoke(IpcEvents.INIT_FILE_WATCHERS);
 
     if (IS_DISCORD_DESKTOP) {
         webFrame.executeJavaScript(sendSync<string>(IpcEvents.PRELOAD_GET_RENDERER_JS));
-        // Not supported in sandboxed preload scripts but Discord doesn't support it either so who cares
-        require(process.env.DISCORD_PRELOAD!);
+        if (process.env.DISCORD_PRELOAD) {
+            try {
+                require(process.env.DISCORD_PRELOAD);
+            } catch (e) {
+                console.error("[Nightcord] Error loading original Discord preload:", e);
+            }
+        }
     }
+} // Monaco popout
+else {
+    contextBridge.exposeInMainWorld("setCss", debounce(VencordNative.quickCss.set));
+    contextBridge.exposeInMainWorld("getCurrentCss", VencordNative.quickCss.get);
+    contextBridge.exposeInMainWorld("getTheme", VencordNative.quickCss.getEditorTheme);
 }

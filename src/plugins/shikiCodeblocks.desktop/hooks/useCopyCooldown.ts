@@ -17,10 +17,10 @@
 */
 
 import { copyToClipboard } from "@utils/clipboard";
-import { useState } from "@webpack/common";
+import { React } from "@webpack/common";
 
 export function useCopyCooldown(cooldown: number) {
-    const [copyCooldown, setCopyCooldown] = useState(false);
+    const [copyCooldown, setCopyCooldown] = React.useState(false);
 
     function copy(text: string) {
         copyToClipboard(text);

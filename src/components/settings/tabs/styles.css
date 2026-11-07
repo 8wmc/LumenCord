@@ -15,6 +15,35 @@
     flex-direction: row;
 }
 
+.vc-settings-discordinvite {
+    display: flex;
+    flex-direction: row;
+}
+
+.vc-settings-card {
+    padding: 1em;
+    margin-bottom: 1em;
+}
+
+.vc-settings-card-buttons {
+    display: flex;
+    margin-top: 1.5em;
+    gap: 0.5em;
+}
+
+.vc-warning-card {
+    padding: 1em;
+    background: var(--background-feedback-warning);
+    border: 1px solid var(--text-status-idle);
+    color: var(--text-status-idle);
+}
+
+.vc-backup-restore-card {
+    background-color: var(--background-feedback-warning);
+    border-color: var(--text-status-idle);
+    color: var(--text-status-idle);
+}
+
 .vc-settings-theme-links {
     /* Needed to fix bad themes that hide certain textarea elements for whatever eldritch reason */
     display: inline-block !important;
@@ -32,7 +61,7 @@
 }
 
 .vc-settings-theme-links::placeholder {
-    color: var(--text-muted) !important;
+    color: var(--text-subtle) !important;
 }
 
 .vc-settings-theme-links:focus {
@@ -61,7 +90,44 @@
     height: 1.25em;
 }
 
-.vc-settings-switches {
-    display: grid;
-    gap: 8px;
+.vc-settings-modal {
+    padding: 1.5em !important;
+}
+
+.vc-settings-modal-close {
+    float: right;
+}
+
+/* ── Masque les boutons natifs Discord non désirés ── */
+
+/* Bouton DevTools (icône clé) + son menu popup */
+[class*="devToolsButton"],
+[class*="devtoolsButton"],
+[class*="DevTools"] > [class*="clickable"] {
+    display: none !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
+/* Bouton Aide / Help (point d'interrogation) */
+[class*="helpButton"],
+[class*="HelpButton"],
+[aria-label="Help"],
+[aria-label="Aide"] {
+    display: none !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Supprime aussi l'espace résiduel dans la headerbar privée */
+[class*="privateChannelRecipientsInviteArea"],
+[class*="toolbar"] [class*="devTools"],
+[class*="toolbar"] [class*="help"] {
+    display: none !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }

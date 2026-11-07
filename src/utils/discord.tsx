@@ -17,13 +17,14 @@
 */
 
 import type { MessageObject } from "@api/MessageEvents";
-import type { Channel, CloudUpload, ConfirmModalProps, Guild, GuildFeatures, MediaModalItem, MediaModalProps, Message, User } from "@vencord/discord-types";
-import { ChannelActionCreators, ChannelStore, ComponentDispatch, ConfirmModal, Constants, FluxDispatcher, GuildStore, i18n, InviteActions, MessageActions, openMediaModal, openModal, openUserProfileModal, RestAPI, SelectedChannelStore, SelectedGuildStore, showToast, UserProfileStore, UserSettingsActionCreators, UserUtils } from "@webpack/common";
+import type { Channel, CloudUpload, Guild, GuildFeatures, Message, User } from "@vencord/discord-types";
+import { ChannelActionCreators, ChannelStore, ComponentDispatch, Constants, FluxDispatcher, GuildStore, i18n, InviteActions, MessageActions, RestAPI, SelectedChannelStore, SelectedGuildStore, Toasts, UserProfileActions, UserProfileStore, UserSettingsActionCreators, UserUtils } from "@webpack/common";
 import { Except } from "type-fest";
 
 import { copyToClipboard } from "./clipboard";
 import { runtimeHashMessageKey } from "./intlHash";
 import { Logger } from "./Logger";
+import { MediaModalItem, MediaModalProps, openMediaModal } from "./modal";
 
 const IntlManagerLogger = new Logger("IntlManager");
 
@@ -91,7 +92,13 @@ export function getCurrentGuild(): Guild | undefined {
 }
 
 export function openPrivateChannel(userId: string) {
-    ChannelActionCreators.openPrivateChannel(userId);
+    if (typeof ChannelActionCreators?.openPrivateChannel === "function") {
+        try {
+            return ChannelActionCreators.openPrivateChannel({ recipientIds: [userId], navigateToChannel: true });
+        } catch {
+            return ChannelActionCreators.openPrivateChannel([userId]);
+        }
+    }
 }
 
 export const enum Theme {
@@ -108,6 +115,9 @@ export function getTheme(): Theme {
 }
 
 export function insertTextIntoChatInputBox(text: string) {
+    try {
+        ComponentDispatch?.dispatchToLastSubscribed?.("TEXTAREA_FOCUS");
+    } catch {}
     ComponentDispatch.dispatchToLastSubscribed("INSERT_TEXT", {
         rawText: text,
         plainText: text
@@ -116,10 +126,14 @@ export function insertTextIntoChatInputBox(text: string) {
 
 export async function copyWithToast(text: string, toastMessage = "Copied to clipboard!") {
     await copyToClipboard(text);
-    showToast({ text: toastMessage, variant: "success" });
+    Toasts.show({
+        message: toastMessage,
+        id: Toasts.genId(),
+        type: Toasts.Type.SUCCESS
+    });
 }
 
-interface MessageOptions {
+export interface MessageOptions {
     messageReference: Message["messageReference"];
     allowedMentions: {
         parse: string[];
@@ -166,9 +180,12 @@ export function openImageModal(item: Except<MediaModalItem, "type">, mediaModalP
     return openMediaModal({
         items: [{
             type: "IMAGE",
+            src: item.url,
+            url: item.url,
             original: item.original ?? item.url,
             ...item,
         }],
+        shouldHideMediaOptions: false,
         ...mediaModalProps
     });
 }
@@ -178,14 +195,14 @@ export async function openUserProfile(id: string) {
     if (!user) throw new Error("No such user: " + id);
 
     const guildId = SelectedGuildStore.getGuildId();
-    openUserProfileModal({
+    UserProfileActions.openUserProfileModal({
         userId: id,
         guildId,
         channelId: SelectedChannelStore.getChannelId(),
-        sourceAnalyticsLocations: [
-            "username",
-            "user profile popout",
-        ]
+        analyticsLocation: {
+            page: guildId ? "Guild Channel" : "DM Channel",
+            section: "Profile Popout"
+        }
     });
 }
 
@@ -200,9 +217,9 @@ interface FetchUserProfileOptions {
 /**
  * Fetch a user's profile
  */
-export async function fetchUserProfile(id: string, options?: FetchUserProfileOptions) {
+export async function fetchUserProfile(id: string, options?: FetchUserProfileOptions, cache = true) {
     const cached = UserProfileStore.getUserProfile(id);
-    if (cached) return cached;
+    if (cached && cache) return cached;
 
     FluxDispatcher.dispatch({ type: "USER_PROFILE_FETCH_START", userId: id });
 
@@ -241,35 +258,4 @@ export function getGuildAcronym(guild: Guild): string {
 
 export function hasGuildFeature(guild: Guild, feature: GuildFeatures): boolean {
     return guild.features?.has(feature) ?? false;
-}
-
-export type ConfirmOptions = Pick<ConfirmModalProps, "title" | "subtitle" | "confirmText" | "cancelText" | "variant" | "onConfirm" | "onCancel" | "onCloseCallback">;
-
-export async function confirmAction({ variant, confirmText, title, cancelText, subtitle, onConfirm, onCancel, onCloseCallback }: ConfirmOptions) {
-    return new Promise<boolean>((res, rej) => {
-        const wrap = (fn: Function | undefined, value: boolean) => async (...args: any[]): Promise<void> => {
-            try {
-                await fn?.(...args);
-                res(value);
-            } catch (e) {
-                rej(e);
-            }
-        };
-
-        openModal(modalProps => {
-            return (
-                <ConfirmModal
-                    {...modalProps}
-                    variant={variant}
-                    confirmText={confirmText}
-                    cancelText={cancelText}
-                    title={title}
-                    subtitle={subtitle}
-                    onConfirm={wrap(onConfirm, true)}
-                    onCancel={wrap(onCancel, false)}
-                    onCloseCallback={wrap(onCloseCallback, false)}
-                />
-            );
-        });
-    });
 }

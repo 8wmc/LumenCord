@@ -24,53 +24,41 @@ import "../checkNodeVersion.js";
 import { exec, execSync } from "child_process";
 import esbuild, { build, context } from "esbuild";
 import { constants as FsConstants, readFileSync } from "fs";
-import { access, readdir, readFile } from "fs/promises";
+import { access, mkdir, readdir, readFile } from "fs/promises";
 import { minify as minifyHtml } from "html-minifier-terser";
-import { optimize as optimizeSvg } from 'svgo';
-import { join, relative, resolve } from "path";
+import { homedir } from "os";
+import { dirname, join, relative, resolve } from "path";
+import { fileURLToPath } from "url";
 import { promisify } from "util";
 
 import { getPluginTarget } from "../utils.mjs";
-import { builtinModules } from "module";
 
-/** @type {import("../../package.json")} */
-const PackageJSON = JSON.parse(readFileSync("package.json", "utf-8"));
+const PackageJSON = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../package.json"), "utf-8"));
 
 export const VERSION = PackageJSON.version;
 // https://reproducible-builds.org/docs/source-date-epoch/
-export const BUILD_TIMESTAMP = Number(process.env.SOURCE_DATE_EPOCH) || Date.now();
+export const BUILD_TIMESTAMP = Number(process.env.SOURCE_DATE_EPOCH) * 1000 || Date.now();
 
 export const watch = process.argv.includes("--watch");
 export const IS_DEV = watch || process.argv.includes("--dev");
 export const IS_REPORTER = process.argv.includes("--reporter");
 export const IS_ANTI_CRASH_TEST = process.argv.includes("--anti-crash-test");
 export const IS_STANDALONE = process.argv.includes("--standalone");
+export const IS_COMPANION_TEST = IS_REPORTER && process.argv.includes("--companion-test");
+if (!IS_COMPANION_TEST && process.argv.includes("--companion-test"))
+    console.error("--companion-test must be run with --reporter for any effect");
 
 export const IS_UPDATER_DISABLED = process.argv.includes("--disable-updater");
-export const gitHash = process.env.VENCORD_HASH || execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
+export const gitHash = process.env.NIGHTCORD_HASH || execSync("git rev-parse HEAD", { encoding: "utf-8" }).trim();
 
 export const banner = {
     js: `
-// Vencord ${gitHash}
+// Nightcord ${gitHash}
 // Standalone: ${IS_STANDALONE}
 // Platform: ${IS_STANDALONE === false ? process.platform : "Universal"}
 // Updater Disabled: ${IS_UPDATER_DISABLED}
 `.trim()
 };
-
-export async function getMonacoEditorCdnUrl() {
-    const manifest = await readFile(resolve(import.meta.dirname, "../../node_modules/@vencord/monaco-editor/package.json"), "utf8");
-    /**
-     * @type {import("type-fest").PackageJson}
-     */
-    const { version } = JSON.parse(manifest);
-
-    if (!version) {
-        throw new Error("Failed to extract editor version");
-    }
-
-    return `https://cdn.jsdelivr.net/npm/@vencord/monaco-editor@${version}/dist/index.html`;
-}
 
 /**
  * JSON.stringify all values in an object
@@ -145,7 +133,7 @@ export const makeAllPackagesExternalPlugin = {
 };
 
 /**
- * @type {(kind: "web" | "discordDesktop" | "vesktop") => import("esbuild").Plugin}
+ * @type {(kind: "web" | "discordDesktop" | "vesktop" | "equibop") => import("esbuild").Plugin}
  */
 export const globPlugins = kind => ({
     name: "glob-plugins",
@@ -159,7 +147,14 @@ export const globPlugins = kind => ({
         });
 
         build.onLoad({ filter, namespace: "import-plugins" }, async () => {
-            const pluginDirs = ["plugins/_api", "plugins/_core", "plugins", "userplugins"];
+            const pluginDirs = ["plugins/_api", "plugins/_core", "plugins", "userplugins", "nightcordplugins", "nightcordplugins/_api"];
+            
+            let blacklist = [];
+            try {
+                const blacklistContent = await readFile(join(process.cwd(), "blacklist.txt"), "utf-8");
+                blacklist = blacklistContent.split("\n").map(l => l.trim()).filter(l => l);
+            } catch(e) {}
+            
             let code = "";
             let pluginsCode = "\n";
             let metaCode = "\n";
@@ -175,17 +170,29 @@ export const globPlugins = kind => ({
                     const fileName = file.name;
                     if (fileName.startsWith("_") || fileName.startsWith(".")) continue;
                     if (fileName === "index.ts") continue;
+                    if (fileName.endsWith(".ini")) continue;
+
+                    const isDir = file.isDirectory();
+                    const isSupportedFile = /\.(tsx?|jsx?|css)$/.test(fileName);
+                    if (!isDir && !isSupportedFile) continue;
 
                     const target = getPluginTarget(fileName);
+                    const cleanFileName = fileName.replace(/\.tsx?$/, "").replace(/\.jsx?$/, "").replace(/\.css$/, "");
+
+                    if (kind === "web" && blacklist.includes(cleanFileName)) {
+                        const name = await resolvePluginName(fullDir, file);
+                        excludedCode += `${JSON.stringify(name)}:${JSON.stringify(target || "web")},\n`;
+                        continue;
+                    }
 
                     if (target && !IS_REPORTER) {
                         const excluded =
                             (target === "dev" && !IS_DEV) ||
                             (target === "web" && kind === "discordDesktop") ||
-                            (target === "browser" && kind !== "web") ||
                             (target === "desktop" && kind === "web") ||
                             (target === "discordDesktop" && kind !== "discordDesktop") ||
-                            (target === "vesktop" && kind !== "vesktop");
+                            (target === "vesktop" && kind !== "vesktop" && kind !== "equibop") ||
+                            (target === "equibop" && kind !== "equibop" && kind !== "vesktop");
 
                         if (excluded) {
                             const name = await resolvePluginName(fullDir, file);
@@ -194,16 +201,83 @@ export const globPlugins = kind => ({
                         }
                     }
 
-                    const folderName = `src/${dir}/${fileName}`.replace(/^src\/plugins\//, "");
-
+                    const folderName = `src/${dir}/${fileName}`;
                     const mod = `p${i}`;
-                    code += `import ${mod} from "./${dir}/${fileName.replace(/\.tsx?$/, "")}";\n`;
+
+                    if (userPlugin && fileName.endsWith(".css")) {
+                        const pluginName = fileName.replace(/\.css$/, "");
+                        code += `import ${mod}_css from "./${dir}/${fileName}";\n`;
+                        code += `const ${mod} = { name: ${JSON.stringify(pluginName)}, description: "User style loaded as a plugin", authors: [{ name: "User", id: 0n }], start() {}, stop() {} };\n`;
+                    } else {
+                        code += `import ${mod} from "./${dir}/${fileName.replace(/\.tsx?$/, "")}";\n`;
+                    }
+
                     pluginsCode += `[${mod}.name]:${mod},\n`;
                     metaCode += `[${mod}.name]:${JSON.stringify({ folderName, userPlugin })},\n`;
                     i++;
                 }
             }
             code += `export default {${pluginsCode}};export const PluginMeta={${metaCode}};export const ExcludedPlugins={${excludedCode}};`;
+
+            // ─── External User Plugins (~/Documents/Nightcord/userplugins/) ───────────
+            // Scan and auto-create the external userplugins directory.
+            const externalUserPluginsDir = join(homedir(), "Documents", "Nightcord", "userplugins");
+            try {
+                await mkdir(externalUserPluginsDir, { recursive: true });
+            } catch { /* already exists or permission error — silently skip */ }
+
+            let externalPluginsCode = "";
+            let externalPluginsMapCode = "\n";
+            let externalMetaCode = "\n";
+            let j = 0;
+            if (await exists(externalUserPluginsDir)) {
+                const externalFiles = await readdir(externalUserPluginsDir, { withFileTypes: true }).catch(() => []);
+                for (const file of externalFiles) {
+                    const fileName = file.name;
+                    if (fileName.startsWith("_") || fileName.startsWith(".")) continue;
+                    if (fileName === "index.ts" || fileName === "index.tsx") continue;
+                    if (fileName.endsWith(".ini")) continue;
+
+                    const isDir = file.isDirectory();
+                    const isSupportedFile = /\.(tsx?|jsx?|css)$/.test(fileName);
+                    if (!isDir && !isSupportedFile) continue;
+
+                    const absPath = join(externalUserPluginsDir, fileName);
+                    const mod = `up${j}`;
+                    const folderName = `external/userplugins/${fileName}`;
+
+                    try {
+                        if (isDir) {
+                            // Try index.ts then index.tsx
+                            let entryPoint = null;
+                            for (const entry of ["index.ts", "index.tsx"]) {
+                                const full = join(absPath, entry);
+                                if (await exists(full)) { entryPoint = full; break; }
+                            }
+                            if (!entryPoint) continue;
+                            externalPluginsCode += `import ${mod} from ${JSON.stringify(entryPoint)};\n`;
+                        } else if (fileName.endsWith(".css")) {
+                            const pluginName = fileName.replace(/\.css$/, "");
+                            externalPluginsCode += `import ${mod}_css from ${JSON.stringify(absPath)};\n`;
+                            externalPluginsCode += `const ${mod} = { name: ${JSON.stringify(pluginName)}, description: "User style", authors: [{ name: "User", id: 0n }], start() {}, stop() {} };\n`;
+                        } else {
+                            externalPluginsCode += `import ${mod} from ${JSON.stringify(absPath.replace(/\.tsx?$/, "").replace(/\.jsx?$/, ""))};\n`;
+                        }
+                        externalPluginsMapCode += `[${mod}.name]:${mod},\n`;
+                        externalMetaCode += `[${mod}.name]:${JSON.stringify({ folderName, userPlugin: true })},\n`;
+                        j++;
+                    } catch { /* skip broken plugin */ }
+                }
+            }
+
+            if (j > 0) {
+                // Merge external plugins into the existing export
+                code = code.replace(
+                    /export default \{(.*)\};export const PluginMeta=\{(.*)\};export const ExcludedPlugins=\{(.*)\};/s,
+                    (_, plugs, meta, excl) =>
+                        `${externalPluginsCode}export default {${plugs}${externalPluginsMapCode}};export const PluginMeta={${meta}${externalMetaCode}};export const ExcludedPlugins={${excl}};`
+                );
+            }
             return {
                 contents: code,
                 resolveDir: "./src",
@@ -240,9 +314,9 @@ export const gitRemotePlugin = {
             namespace: "git-remote", path: args.path
         }));
         build.onLoad({ filter, namespace: "git-remote" }, async () => {
-            let remote = process.env.VENCORD_REMOTE;
+            let remote = process.env.NIGHTCORD_REMOTE;
             if (!remote) {
-                const res = await promisify(exec)("git remote get-url origin", { encoding: "utf-8" }).catch(() => ({ stdout: "https://github.com/8wmc/LumenCord" }));
+                const res = await promisify(exec)("git remote get-url origin", { encoding: "utf-8" });
                 remote = res.stdout.trim()
                     .replace("https://github.com/", "")
                     .replace("git@github.com:", "")
@@ -294,12 +368,6 @@ export const fileUrlPlugin = {
                         removeStyleLinkTypeAttributes: true,
                         useShortDoctype: true
                     });
-                } else if (path.endsWith(".svg")) {
-                    content = optimizeSvg(await readFile(path, "utf-8"), {
-                        datauri: base64 ? "base64" : void 0,
-                        multipass: true,
-                        floatPrecision: 2,
-                    }).data;
                 } else if (/[mc]?[jt]sx?$/.test(path)) {
                     const res = await esbuild.build({
                         entryPoints: [path],
@@ -322,7 +390,20 @@ export const fileUrlPlugin = {
     }
 };
 
-const styleModule = readFileSync("./scripts/build/module/style.js", "utf-8");
+/**
+ * @type {(filter: RegExp, message: string) => import("esbuild").Plugin}
+ */
+export const banImportPlugin = (filter, message) => ({
+    name: "ban-imports",
+    setup: build => {
+        build.onResolve({ filter }, () => {
+            return { errors: [{ text: message }] };
+        });
+    }
+});
+
+const styleModule = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "module/style.js"), "utf-8");
+
 /**
  * @type {import("esbuild").Plugin}
  */
@@ -348,20 +429,41 @@ export const stylePlugin = {
 };
 
 /**
- * @type {(filter: RegExp, message: string) => import("esbuild").Plugin}
- */
-export const banImportPlugin = (filter, message) => ({
-    name: "ban-imports",
-    setup: build => {
-        build.onResolve({ filter }, () => {
-            return { errors: [{ text: message }] };
-        });
-    }
-});
-
-/**
  * @type {import("esbuild").BuildOptions}
  */
+const pluginAliasesPlugin = {
+    name: "plugin-aliases",
+    setup(build) {
+        build.onResolve({ filter: /^@(?:plugins|equicordplugins|nightcordplugins)(?:\/(.*))?$/ }, async args => {
+            const match = args.path.match(/^@(?:plugins|equicordplugins|nightcordplugins)(?:\/(.*))?$/);
+            const rel = match?.[1] || "";
+
+            for (const base of ["./src/plugins", "./src/nightcordplugins"]) {
+                const fullBase = join(process.cwd(), base);
+                const target = rel ? join(fullBase, rel) : fullBase;
+                for (const candidate of [
+                    target + ".ts",
+                    target + ".tsx",
+                    target + ".js",
+                    target + ".css",
+                    join(target, "index.ts"),
+                    join(target, "index.tsx"),
+                    join(target, "index.js"),
+                    target
+                ]) {
+                    try {
+                        const s = await readFile(candidate).catch(() => null);
+                        if (s !== null) {
+                            return { path: candidate };
+                        }
+                    } catch { }
+                }
+            }
+            return null;
+        });
+    }
+};
+
 export const commonOpts = {
     logLevel: "info",
     bundle: true,
@@ -369,21 +471,43 @@ export const commonOpts = {
     sourcemap: watch ? "inline" : "external",
     legalComments: "linked",
     banner,
-    plugins: [fileUrlPlugin, gitHashPlugin, gitRemotePlugin, stylePlugin],
+    plugins: [pluginAliasesPlugin, fileUrlPlugin, gitHashPlugin, gitRemotePlugin, stylePlugin],
     external: ["~plugins", "~git-hash", "~git-remote", "/assets/*"],
-    inject: ["./scripts/build/inject/react.mjs"],
+    inject: [join(dirname(fileURLToPath(import.meta.url)), "inject/react.mjs")],
     jsx: "transform",
     jsxFactory: "VencordCreateElement",
-    jsxFragment: "VencordFragment"
+    jsxFragment: "VencordFragment",
+    alias: {
+        "@main": "./src/main",
+        "@api": "./src/api",
+        "@components": "./src/components",
+        "@utils": "./src/utils",
+        "@debug": "./src/debug",
+        "@plugins": "./src/plugins",
+        "@shared": "./src/shared",
+        "@webpack/common": "./src/webpack/common",
+        "@webpack/patcher": "./src/webpack/patchWebpack",
+        "@webpack": "./src/webpack/webpack",
+        "@nightcordplugins": "./src/nightcordplugins",
+        "@equicordplugins": "./src/plugins",
+        "@Nightcord/types/webpack/common": "./src/webpack/common",
+        "@Nightcord/types/webpack": "./src/webpack/webpack",
+        "@Nightcord/types/utils": "./src/utils",
+        "@Nightcord/types/components": "./src/components",
+        "@Nightcord/types/api": "./src/api",
+        "@Nightcord/types/plugins": "./src/plugins",
+        "@Nightcord/types": "./src",
+        "@equicord/types/webpack/common": "./src/webpack/common",
+        "@equicord/types/webpack": "./src/webpack/webpack",
+        "@equicord/types/utils": "./src/utils",
+        "@equicord/types/components": "./src/components",
+        "@equicord/types/api": "./src/api",
+        "@equicord/types": "./src",
+    }
 };
 
-const escapedBuiltinModules = builtinModules
-    .map(m => m.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&"))
-    .join("|");
-const builtinModuleRegex = new RegExp(`^(node:)?(${escapedBuiltinModules})$`);
 
 export const commonRendererPlugins = [
-    banImportPlugin(builtinModuleRegex, "Cannot import node inbuilt modules in browser code. You need to use a native.ts file"),
     banImportPlugin(/^react$/, "Cannot import from react. React and hooks should be imported from @webpack/common"),
     banImportPlugin(/^electron(\/.*)?$/, "Cannot import electron in browser code. You need to use a native.ts file"),
     banImportPlugin(/^ts-pattern$/, "Cannot import from ts-pattern. match and P should be imported from @webpack/common"),

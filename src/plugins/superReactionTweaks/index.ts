@@ -7,7 +7,7 @@
 import { definePluginSettings } from "@api/Settings";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
-import { UserStore } from "@webpack/common";
+import { OverridePremiumTypeStore } from "@webpack/common";
 
 export const settings = definePluginSettings({
     superReactByDefault: {
@@ -53,8 +53,8 @@ export default definePlugin({
         {
             find: ".EMOJI_PICKER_CONSTANTS_EMOJI_CONTAINER_PADDING_HORIZONTAL)",
             replacement: {
-                match: /(openPopoutType:void 0(?=.+?isBurstReaction:(\i).+?\.intention===(\i\.\i\.REACTION)).+?\[\2,\i\]=\i\.useState\()!1\)(?<=pickerIntention:(\i).+?)/,
-                replace: (_, rest, _isBurstReactionVariable, REACTION_INTENTION, pickerIntention) => `${rest}$self.shouldSuperReactByDefault&&${pickerIntention}===${REACTION_INTENTION})`
+                match: /(openPopoutType:void 0(?=.+?isBurstReaction:(\i).+?;(\i===\i\.\i\.REACTION)&&\i\.push\().+?\[\2,\i\]=\i\.useState\()!1\)/,
+                replace: (_, rest, _isBurstReactionVariable, isReactionIntention) => `${rest}$self.shouldSuperReactByDefault&&${isReactionIntention})`
             }
         }
     ],
@@ -67,6 +67,6 @@ export default definePlugin({
     },
 
     get shouldSuperReactByDefault() {
-        return settings.store.superReactByDefault && UserStore.getCurrentUser().premiumType != null;
+        return settings.store.superReactByDefault && (OverridePremiumTypeStore.getState().premiumTypeActual != null);
     }
 });

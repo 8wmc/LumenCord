@@ -16,18 +16,73 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { Button, ButtonProps, TextButton } from "@components/Button";
+import { Button } from "@components/Button";
 import { Heart } from "@components/Heart";
+import { OpenExternalIcon } from "@components/Icons";
+import { openInviteModal } from "@utils/discord";
+import { ButtonProps } from "@vencord/discord-types";
+import { showToast } from "@webpack/common";
 
-export default function DonateButton({ variant, ...props }: Omit<ButtonProps, "children" | "onClick" | "className">) {
-    const commonProps = {
-        ...props,
-        onClick: () => VencordNative.native.openExternal("https://github.com/sponsors/Vendicated"),
-        className: "vc-donate-button",
-        children: <><Heart />Donate</>
-    };
+export function DonateButton({
+    equicord = false,
+    className,
+    ...props
+}: Partial<ButtonProps> & { equicord?: boolean; }) {
+    const link = equicord ? "https://github.com/sponsors/thororen1234" : "https://github.com/sponsors/Vendicated";
+    return (
+        <Button
+            {...props}
+            variant="none"
+            size="medium"
+            type="button"
+            onClick={() => VencordNative.native.openExternal(link)}
+            className={className || "vc-donate-button"}
+        >
+            <Heart />
+            Donate
+        </Button>
+    );
+}
 
-    return variant
-        ? <Button variant={variant} {...commonProps} />
-        : <TextButton variant="secondary" {...commonProps} />;
+export function InviteButton({
+    className,
+    ...props
+}: Partial<ButtonProps>) {
+    return (
+        <Button
+            {...props}
+            variant="none"
+            size="medium"
+            type="button"
+            onClick={async e => {
+                e.preventDefault();
+                openInviteModal("wKgT9j2xfN").catch(() =>
+                    showToast("Invalid or expired invite"),
+                );
+            }}
+            className={className || "vc-donate-button"}
+        >
+            Invite
+            <OpenExternalIcon className="vc-invite-link" />
+        </Button>
+    );
+}
+
+export function TranslateButton({
+    className,
+    ...props
+}: Partial<ButtonProps>) {
+    const link = "https://weblate.equicord.org/projects/equicord/";
+    return (
+        <Button
+            {...props}
+            variant="none"
+            size="medium"
+            type="button"
+            onClick={() => VencordNative.native.openExternal(link)}
+            className={className || "vc-translate-button"}
+        >
+            Translate Here
+        </Button>
+    );
 }

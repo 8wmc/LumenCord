@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Button } from "@components/Button";
+import { BaseText } from "@components/BaseText";
+import { Button, Button as NewButton } from "@components/Button";
 import { Flex } from "@components/Flex";
-import { Heading } from "@components/Heading";
 import { Paragraph } from "@components/Paragraph";
 import { Decoration, getPresets, Preset } from "@plugins/decor/lib/api";
 import { GUILD_ID, INVITE_KEY } from "@plugins/decor/lib/constants";
@@ -20,11 +20,11 @@ import DecorationGridCreate from "@plugins/decor/ui/components/DecorationGridCre
 import DecorationGridNone from "@plugins/decor/ui/components/DecorationGridNone";
 import DecorDecorationGridDecoration from "@plugins/decor/ui/components/DecorDecorationGridDecoration";
 import SectionedGridList from "@plugins/decor/ui/components/SectionedGridList";
-import { confirmAction, copyWithToast, openInviteModal } from "@utils/discord";
+import { copyWithToast, openInviteModal } from "@utils/discord";
 import { Margins } from "@utils/margins";
 import { Queue } from "@utils/Queue";
 import { RenderModalProps, User } from "@vencord/discord-types";
-import { closeAllModals, FluxDispatcher, GuildStore, Modal, NavigationRouter, openModal, Parser, Tooltip, useEffect, UserStore, UserSummaryItem, UserUtils, useState } from "@webpack/common";
+import { closeAllModals, ConfirmModal, FluxDispatcher, Forms, GuildStore, Modal, NavigationRouter, openModal, Parser, Tooltip, useEffect, UserStore, UserSummaryItem, UserUtils, useState } from "@webpack/common";
 
 import { openCreateDecorationModal } from "./CreateDecorationModal";
 import { openGuidelinesModal } from "./GuidelinesModal";
@@ -70,7 +70,7 @@ function SectionHeader({ section }: SectionHeaderProps) {
 
     return <div>
         <Flex>
-            <Heading className={Margins.bottom8} style={{ flexGrow: 1 }}>{section.title}</Heading>
+            <Forms.FormTitle style={{ flexGrow: 1 }}>{section.title}</Forms.FormTitle>
             {hasAuthorIds && <UserSummaryItem
                 users={authors}
                 guildId={undefined}
@@ -158,7 +158,7 @@ function ChangeDecorationModal(props: RenderModalProps) {
         preview={
             <div className={cl("modal-footer-btn-container", Margins.top8)}>
                 <Tooltip text="Join Decor's Discord Server for notifications on your decoration's review, and when new presets are released">
-                    {tooltipProps => <Button
+                    {tooltipProps => <NewButton
                         {...tooltipProps}
                         onClick={async () => {
                             if (!GuildStore.getGuild(GUILD_ID)) {
@@ -176,25 +176,26 @@ function ChangeDecorationModal(props: RenderModalProps) {
                         variant="link"
                     >
                         Discord Server
-                    </Button>}
+                    </NewButton>}
                 </Tooltip>
-                <Button
-                    onClick={() => {
-                        confirmAction({
-                            title: "Log Out",
-                            subtitle: "Are you sure you want to log out of Decor?",
-                            confirmText: "Log Out",
-                            cancelText: "Cancel",
-                            onConfirm() {
+                <NewButton
+                    onClick={() => openModal(modalProps => (
+                        <ConfirmModal
+                            {...modalProps}
+                            title="Log Out"
+                            subtitle="Are you sure you want to log out of Decor?"
+                            confirmText="Log Out"
+                            cancelText="Cancel"
+                            onConfirm={() => {
                                 useAuthorizationStore.getState().remove(UserStore.getCurrentUser().id);
                                 props.onClose();
-                            },
-                        });
-                    }}
+                            }}
+                        />
+                    ))}
                     variant="dangerSecondary"
                 >
                     Log Out
-                </Button>
+                </NewButton>
             </div>
         }
     >
@@ -243,23 +244,20 @@ function ChangeDecorationModal(props: RenderModalProps) {
                     avatarDecoration={avatarDecoration}
                     user={UserStore.getCurrentUser()}
                 />
-                {isActiveDecorationPreset &&
-                    <Heading className={Margins.bottom8} style={{ color: "var(--text-strong, var(--text-default))" }}>
-                        Part of the {activeDecorationPreset.name} Preset
-                    </Heading>
-                }
+                {isActiveDecorationPreset && <Forms.FormTitle className="">Part of the {activeDecorationPreset.name} Preset</Forms.FormTitle>}
                 {typeof activeSelectedDecoration === "object" &&
-                    <Paragraph
+                    <BaseText
+                        size="sm"
                         weight="semibold"
-                        style={{ color: "var(--text-strong, var(--text-default))" }}
+                        style={{ color: "var(--text-strong)" }}
                     >
                         {activeSelectedDecoration?.alt}
-                    </Paragraph>
+                    </BaseText>
                 }
                 {activeDecorationHasAuthor && (
-                    <Paragraph key={`createdBy-${activeSelectedDecoration.authorId}`}>
+                    <BaseText key={`createdBy-${activeSelectedDecoration.authorId}`}>
                         Created by {Parser.parse(`<@${activeSelectedDecoration.authorId}>`)}
-                    </Paragraph>
+                    </BaseText>
                 )}
                 {isActiveDecorationPreset && (
                     <Button onClick={() => copyWithToast(activeDecorationPreset.id)}>

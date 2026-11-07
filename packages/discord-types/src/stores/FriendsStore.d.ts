@@ -66,5 +66,4 @@ export interface FriendsState {
 
 export class FriendsStore extends FluxStore {
     getState(): FriendsState;
-    isInitialized(): boolean;
 }

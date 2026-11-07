@@ -5,7 +5,6 @@
  */
 
 import { Heading } from "@components/Heading";
-import { Margins } from "@components/margins";
 import { Paragraph } from "@components/Paragraph";
 import { SearchableSelect, useMemo, useState } from "@webpack/common";
 
@@ -86,7 +85,7 @@ function ComplexPicker({ voice, voices }: PickerProps) {
 
     return (
         <>
-            <Heading className={Margins.bottom8}>Language</Heading>
+            <Heading>Language</Heading>
             <SearchableSelect
                 placeholder="Select a language"
                 options={languageOptions}
@@ -95,7 +94,7 @@ function ComplexPicker({ voice, voices }: PickerProps) {
                 maxVisibleItems={5}
                 closeOnSelect
             />
-            <Heading className={Margins.bottom8}>Voice</Heading>
+            <Heading>Voice</Heading>
             <SimplePicker
                 voice={voice}
                 voices={voicesForLanguage}
@@ -103,7 +102,6 @@ function ComplexPicker({ voice, voices }: PickerProps) {
         </>
     );
 }
-
 
 function VoiceSetting() {
     const voices = useMemo(() => window.speechSynthesis?.getVoices() ?? [], []);
@@ -122,7 +120,7 @@ function VoiceSetting() {
 export function VoiceSettingSection() {
     return (
         <section>
-            <Heading className={Margins.bottom8}>Voice</Heading>
+            <Heading>Voice</Heading>
             <VoiceSetting />
         </section>
     );

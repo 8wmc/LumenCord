@@ -66,6 +66,7 @@ export class RTCConnectionStore extends FluxStore {
     getRTCConnectionId(): string | undefined;
     getDuration(): number | undefined;
     getLastRTCConnectionState(): LastRTCConnectionState | null;
+    getVoiceFilterSpeakingDurationMs(): number | undefined;
     getPacketStats(): RTCConnectionPacketStats | undefined;
     getVoiceStateStats(): VoiceStateStats | undefined;
     // TODO: finish typing

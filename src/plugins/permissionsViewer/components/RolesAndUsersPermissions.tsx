@@ -19,7 +19,6 @@
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Flex } from "@components/Flex";
 import { CopyIdIcon, InfoIcon, OwnerCrownIcon } from "@components/Icons";
-import { Paragraph } from "@components/Paragraph";
 import { buildExtraRoleContextMenuItems } from "@plugins/betterRoleContext";
 import { cl, getGuildPermissionSpecMap, loadGetGuildPermissionSpecMap } from "@plugins/permissionsViewer/utils";
 import { copyToClipboard } from "@utils/clipboard";
@@ -27,7 +26,7 @@ import { getIntlMessage, getUniqueUsername } from "@utils/discord";
 import { Guild, RenderModalProps, Role, RoleOrUserPermission, UnicodeEmoji, User } from "@vencord/discord-types";
 import { PermissionOverwriteType } from "@vencord/discord-types/enums";
 import { findByCodeLazy } from "@webpack";
-import { ContextMenuApi, FluxDispatcher, GuildMemberStore, GuildRoleStore, i18n, Menu, Modal, openModalLazy, PermissionsBits, ScrollerThin, Tooltip, useEffect, useMemo, useRef, UserStore, useState, useStateFromStores } from "@webpack/common";
+import { ContextMenuApi, FluxDispatcher, GuildMemberStore, GuildRoleStore, i18n, Menu, Modal, openModalLazy, PermissionsBits, ScrollerThin, Text, Tooltip, useEffect, useMemo, useRef, UserStore, useState, useStateFromStores } from "@webpack/common";
 
 import { settings } from "..";
 import { PermissionAllowedIcon, PermissionDeniedIcon } from "./icons";
@@ -82,7 +81,7 @@ function RolesAndUsersPermissionsComponent({ permissions, guild, modalProps, hea
         >
             {!selectedItem && (
                 <div className={cl("modal-no-perms")}>
-                    <Paragraph size="lg">No permissions to display!</Paragraph>
+                    <Text variant="heading-lg/normal">No permissions to display!</Text>
                 </div>
             )}
 
@@ -140,7 +139,7 @@ function RolesAndUsersPermissionsComponent({ permissions, guild, modalProps, hea
                                                 src={user.getAvatarURL(void 0, void 0, false)}
                                             />
                                         )}
-                                        <Paragraph size="md" className={cl("modal-list-item-text")}>
+                                        <Text variant="text-md/normal" className={cl("modal-list-item-text")}>
                                             {
                                                 permission.type === PermissionOverwriteType.ROLE
                                                     ? role?.name ?? "Unknown Role"
@@ -153,7 +152,7 @@ function RolesAndUsersPermissionsComponent({ permissions, guild, modalProps, hea
                                                             </Flex>
                                                         )
                                             }
-                                        </Paragraph>
+                                        </Text>
                                     </div>
                                 </div>
                             );
@@ -186,7 +185,7 @@ function RolesAndUsersPermissionsComponent({ permissions, guild, modalProps, hea
                                         {overrideType === "allowed" && <PermissionAllowedIcon />}
                                         {overrideType === "denied" && <PermissionDeniedIcon />}
                                     </div>
-                                    <Paragraph size="md">{guildPermissionSpecMap[String(bit)].title}</Paragraph>
+                                    <Text variant="text-md/normal">{guildPermissionSpecMap[String(bit)].title}</Text>
 
                                     <Tooltip text={
                                         (() => {
@@ -231,7 +230,6 @@ function RoleContextMenu({ guild, roleId, onClose }: { guild: Guild; roleId: str
                 id={cl("copy-role-id")}
                 label={getIntlMessage("COPY_ID_ROLE")}
                 icon={CopyIdIcon}
-                leadingAccessory={{ type: "icon", icon: CopyIdIcon }}
                 action={() => copyToClipboard(roleId)}
             />
 
@@ -242,7 +240,6 @@ function RoleContextMenu({ guild, roleId, onClose }: { guild: Guild; roleId: str
                     id={cl("view-as-role")}
                     label={getIntlMessage("VIEW_AS_ROLE")}
                     icon={ViewAsRoleIcon}
-                    leadingAccessory={{ type: "icon", icon: ViewAsRoleIcon }}
                     action={() => {
                         onClose();
                         FluxDispatcher.dispatch({
@@ -272,7 +269,6 @@ function UserContextMenu({ userId }: { userId: string; }) {
             <Menu.MenuItem
                 id={cl("copy-user-id")}
                 label={getIntlMessage("COPY_ID_USER")}
-                leadingAccessory={{ type: "icon", icon: CopyIdIcon }}
                 action={() => {
                     copyToClipboard(userId);
                 }}

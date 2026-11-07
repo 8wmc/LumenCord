@@ -1,23 +1,11 @@
 /*
- * Vencord, a modification for Discord's desktop app
- * Copyright (c) 2022 Vendicated and contributors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
+ * Nightcord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 
 import { Logger } from "@utils/Logger";
-import type { Channel, CustomEmoji, Message } from "@vencord/discord-types";
+import type { Channel, CloudUpload, CustomEmoji, Message } from "@vencord/discord-types";
 import { MessageStore } from "@webpack/common";
 import type { Promisable } from "type-fest";
 
@@ -30,7 +18,21 @@ export interface MessageObject {
     tts: boolean;
 }
 
-export interface SendMessageOptions {
+export interface MessageContentOptions {
+    content: string;
+    channelId: string;
+    command: unknown | null;
+    isGif?: boolean;
+    stickers?: string[];
+    uploads?: CloudUpload[];
+    alsoForwardToChannelId?: string;
+
+    // If you end up using these, update their type
+    scheduledTimestamp?: unknown;
+    mediaMention?: unknown;
+}
+
+export interface SendMessageOptions extends MessageContentOptions {
     messageReference?: Message["messageReference"];
     allowedMentions?: {
         parse: string[];
@@ -38,11 +40,13 @@ export interface SendMessageOptions {
     };
     location: string;
     stickerIds?: string[];
-    alsoForwardToChannelId?: string;
-
-    // If you end up using these, update their type
-    scheduledTimestamp?: unknown;
-    mediaMention?: unknown;
+    replyOptions?: {
+        messageReference?: Message["messageReference"];
+        allowedMentions?: {
+            parse: string[];
+            repliedUser: boolean;
+        };
+    };
 }
 
 export interface SendMessageProps {
@@ -60,7 +64,15 @@ export type MessageEditListener = (channelId: string, messageId: string, message
 const sendListeners = new Set<MessageSendListener>();
 const editListeners = new Set<MessageEditListener>();
 
-export async function _handlePreSend(channelId: string, messageObj: MessageObject, options: SendMessageOptions, props: SendMessageProps) {
+export async function _handlePreSend(channelId: string, messageObj: MessageObject, options: SendMessageOptions, props: SendMessageProps, contentOptions: MessageContentOptions) {
+    options = { ...contentOptions, ...options };
+    if (!options.replyOptions && (options.messageReference || options.allowedMentions)) {
+        options.replyOptions = {
+            messageReference: options.messageReference,
+            allowedMentions: options.allowedMentions
+        };
+    }
+
     for (const listener of sendListeners) {
         try {
             const result = await listener(channelId, messageObj, options, props);
@@ -108,7 +120,6 @@ export function removeMessagePreSendListener(listener: MessageSendListener) {
 export function removeMessagePreEditListener(listener: MessageEditListener) {
     return editListeners.delete(listener);
 }
-
 
 // Message clicks
 export type MessageClickListener = (message: Message, channel: Channel, event: MouseEvent) => void;

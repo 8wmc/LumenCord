@@ -1,4 +1,10 @@
 /*
+ * Nightcord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/*
  * Vencord, a modification for Discord's desktop app
  * Copyright (c) 2023 Vendicated and contributors
  *
@@ -19,6 +25,7 @@
 import { Logger } from "@utils/Logger";
 import { Menu, React } from "@webpack/common";
 import type { ReactElement } from "react";
+import { isStealthModeEnabled } from "./stealthState";
 
 /**
  * @param children The rendered context menu elements
@@ -133,13 +140,19 @@ interface ContextMenuProps {
 export function _usePatchContextMenu(props: ContextMenuProps) {
     if (!Menu.MenuItem) return props; // Prevent crashes in case we fail to acquire menu items for some reason
 
+    // ── Stealth Mode Bypass (Check first before any cloning) ──
+    if (isStealthModeEnabled()) return props;
+
+    const contextMenuPatches = navPatches.get(props.navId);
+    const hasPatches = (contextMenuPatches && contextMenuPatches.size > 0) || globalPatches.size > 0;
+    if (!hasPatches) return props;
+
     props = {
         ...props,
         children: cloneMenuChildren(props.children),
     };
 
     props.contextMenuAPIArguments ??= [];
-    const contextMenuPatches = navPatches.get(props.navId);
 
     if (!Array.isArray(props.children)) props.children = [props.children];
 
@@ -161,7 +174,32 @@ export function _usePatchContextMenu(props: ContextMenuProps) {
         }
     }
 
+    props.children = sanitizeMenuChildren(props.children);
+
     return props;
+}
+
+function sanitizeMenuChildren(children: any): any {
+    if (!children) return children;
+    if (Array.isArray(children)) {
+        return children
+            .filter(child => {
+                if (child == null || child === false) return false;
+                if (React.isValidElement(child) && child.type === undefined) return false;
+                return true;
+            })
+            .map(sanitizeMenuChildren);
+    }
+    if (React.isValidElement(children)) {
+        if (children.type === undefined) return null;
+        if (children.props?.children) {
+            const nextChildren = sanitizeMenuChildren(children.props.children);
+            if (nextChildren !== children.props.children) {
+                return React.cloneElement(children, { children: nextChildren });
+            }
+        }
+    }
+    return children;
 }
 
 function cloneMenuChildren(obj: ReactElement<any> | Array<ReactElement<any> | null> | null) {
@@ -176,7 +214,7 @@ function cloneMenuChildren(obj: ReactElement<any> | Array<ReactElement<any> | nu
             obj?.props?.children &&
             (obj.type !== Menu.MenuControlItem || obj.type === Menu.MenuControlItem && obj.props.control != null)
         ) {
-            obj.props.children = cloneMenuChildren(obj.props.children);
+            obj = React.cloneElement(obj, { children: cloneMenuChildren(obj.props.children) });
         }
     }
 

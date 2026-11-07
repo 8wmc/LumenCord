@@ -1,118 +1,174 @@
 /*
- * Vencord, a modification for Discord's desktop app
- * Copyright (c) 2022 Vendicated and contributors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
+ * Vencord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 
-import { useSettings } from "@api/Settings";
 import { Button } from "@components/Button";
 import { Card } from "@components/Card";
 import { Divider } from "@components/Divider";
 import { Flex } from "@components/Flex";
-import { FormSwitch } from "@components/FormSwitch";
 import { Heading } from "@components/Heading";
 import { Link } from "@components/Link";
 import { Paragraph } from "@components/Paragraph";
-import { SettingsTab, wrapTab } from "@components/settings/tabs/BaseTab";
+import { SettingsTab, wrapTab } from "@components/settings";
+import { Span } from "@components/Span";
 import { Margins } from "@utils/margins";
-import { classes } from "@utils/misc";
-import { useAwaiter } from "@utils/react";
-import { getRepo, isNewer, UpdateLogger } from "@utils/updater";
-import { React } from "@webpack/common";
+import { relaunch } from "@utils/native";
+import { changes, checkForUpdates, rebuild, update, UpdateLogger } from "@utils/updater";
+import { React, useState } from "@webpack/common";
+import { Toasts } from "@webpack/common";
+import { t } from "@api/i18n";
+import {domain} from "../../../../../DOMAIN.json";
 
-import gitHash from "~git-hash";
+// Version locale depuis package.json (injectée au build)
+declare const VERSION: string;
 
-import { CommonProps, Newer, Updatable } from "./Components";
+function UpdaterTab() {
+    const [checking, setChecking] = useState(false);
+    const [downloading, setDownloading] = useState(false);
+    const [launching, setLaunching] = useState(false);
+    const [checked, setChecked] = useState(false);
+    const [outdated, setOutdated] = useState(false);
+    const [updateList, setUpdateList] = useState(changes ?? []);
+    const [error, setError] = useState<string | null>(null);
 
-function VesktopSection() {
-    if (!IS_VESKTOP) return null;
+    async function handleCheck() {
+        setChecking(true);
+        setError(null);
+        try {
+            const hasUpdate = await checkForUpdates();
+            setOutdated(hasUpdate);
+            setUpdateList(changes ?? []);
+            setChecked(true);
 
-    const [isVesktopOutdated] = useAwaiter<boolean>(VesktopNative.app.isOutdated, { fallbackValue: false });
+            if (!hasUpdate) {
+                Toasts.show({
+                    message: t("You are already on the latest version!"),
+                    id: Toasts.genId(),
+                    type: Toasts.Type.SUCCESS,
+                    options: { position: Toasts.Position.BOTTOM }
+                });
+            }
+        } catch (e: any) {
+            UpdateLogger.error(e);
+            let detail: string | null = e?.message || e?.error?.message || (typeof e === "string" ? e : null);
+            // Strip any residual HTML and truncate to keep the UI clean
+            if (detail) {
+                detail = detail.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+                if (detail.length > 300) detail = detail.substring(0, 300) + "…";
+            }
+            setError(t("Check for Updates") + " — " + (detail ?? "Please check your connection."));
+        } finally {
+            setChecking(false);
+        }
+    }
 
-    return (
-        <Flex className={Margins.bottom20} flexDirection="column" gap="1em">
-            <Card variant="info">
-                <Heading className={Margins.bottom8}>Vesktop & LumenCord</Heading>
-                <Paragraph>Vesktop and LumenCord are two separate things. This updater is for LumenCord.</Paragraph>
-                <Paragraph className={Margins.top8}>
-                    You receive separate popups for Vesktop updates. You can also manually update by installing the <Link href="https://vesktop.dev/install">latest version</Link>.
-                </Paragraph>
-            </Card>
+    async function handleUpdate() {
+        setDownloading(true);
+        setError(null);
+        try {
+            // Update & build triggers our new ASAR overwrite
+            await update();
+            await rebuild();
 
-            {isVesktopOutdated && (
-                <Card variant="warning">
-                    <Heading className={Margins.bottom8}>Vesktop Outdated</Heading>
-                    <Flex flexDirection="column" gap="0.5em">
-                        <Paragraph>Your version of Vesktop is outdated!</Paragraph>
-                        <Button variant="link" onClick={() => VesktopNative.app.openUpdater()}>Open Vesktop Updater</Button>
-                    </Flex>
-                </Card>
-            )}
-        </Flex>
-    );
-}
+            Toasts.show({
+                message: "Update successful! Restarting...",
+                id: Toasts.genId(),
+                type: Toasts.Type.SUCCESS,
+                options: { position: Toasts.Position.BOTTOM }
+            });
 
-function Updater() {
-    const settings = useSettings(["autoUpdate", "autoUpdateNotification"]);
-
-    const [repo, err, repoPending] = useAwaiter(getRepo, {
-        fallbackValue: "Loading...",
-        onError: e => UpdateLogger.error("Failed to retrieve repo", err)
-    });
-
-    const commonProps: CommonProps = {
-        repo,
-        repoPending
-    };
+            setTimeout(() => {
+                relaunch();
+            }, 1500);
+        } catch (e: any) {
+            UpdateLogger.error(e);
+            setError("Update failed: " + e.message);
+            setDownloading(false);
+        }
+    }
 
     return (
         <SettingsTab>
-            <VesktopSection />
+            <Heading className={Margins.top16}>{t("Nightcord Updater")}</Heading>
+            <Paragraph className={Margins.bottom20}>
+                {t("Check for new versions of Nightcord. Updates can be installed automatically.")}
+            </Paragraph>
 
-            <div className="vc-settings-switches">
-                <FormSwitch
-                    title="Automatically update"
-                    description="Automatically update LumenCord without confirmation prompt"
-                    value={settings.autoUpdate}
-                    onChange={(v: boolean) => settings.autoUpdate = v}
-                    hideBorder
-                />
-                <FormSwitch
-                    title="Get notified when an automatic update completes"
-                    description="Show a notification when LumenCord automatically updates"
-                    value={settings.autoUpdateNotification}
-                    onChange={(v: boolean) => settings.autoUpdateNotification = v}
-                    disabled={!settings.autoUpdate}
-                    hideBorder
-                />
-            </div>
+            {/* Version actuelle */}
+            <Card style={{ padding: "12px 16px", marginBottom: 12 }}>
+                <Flex style={{ alignItems: "center", justifyContent: "space-between" }}>
+                    <div>
+                        <Span size="sm" color="text-subtle">{t("Current Version")}</Span>
+                        <div>
+                            <Span size="md" weight="medium" color="text-strong">
+                                v{VERSION}
+                            </Span>
+                        </div>
+                    </div>
+                    <div>
+                        <Span size="sm" color="text-subtle">{t("Website")}</Span>
+                        <div>
+                            <Link href={`https://${domain}`} style={{ fontSize: 13 }}>
+                                {domain}
+                            </Link>
+                        </div>
+                    </div>
+                </Flex>
+            </Card>
 
-            <div className={Margins.top20} />
+            {/* Error */}
+            {error && (
+                <Card style={{ padding: "10px 16px", marginBottom: 12, borderLeft: "3px solid var(--status-danger)" }}>
+                    <Span size="sm" color="text-danger">{error}</Span>
+                </Card>
+            )}
 
-            <Divider className={classes(Margins.top16, Margins.bottom16)} />
+            {/* Résultat vérification */}
+            {checked && !error && (
+                outdated ? (
+                    <Card style={{ padding: "10px 16px", marginBottom: 12, borderLeft: "3px solid var(--status-warning)" }}>
+                        <Span size="sm" style={{ color: "var(--text-warning)" }}>
+                            {updateList[0]?.message ?? "A new update is available!"}
+                        </Span>
+                    </Card>
+                ) : (
+                    <Card style={{ padding: "10px 16px", marginBottom: 12, borderLeft: "3px solid var(--status-positive)" }}>
+                        <Span size="sm" style={{ color: "var(--text-positive)" }}>{t("You are running the latest version ✓")}</Span>
+                    </Card>
+                )
+            )}
 
-            <Heading className={Margins.bottom8}>Updates</Heading>
+            {/* Boutons */}
+            <Flex gap="8px" className={Margins.top8}>
+                <Button
+                    size="small"
+                    disabled={checking}
+                    onClick={handleCheck}
+                >
+                    {checking ? "Checking..." : t("Check for Updates")}
+                </Button>
 
-            {isNewer
-                ? <Newer {...commonProps} />
-                : <Updatable {...commonProps} />
-            }
+                {outdated && (
+                    <Button
+                        size="small"
+                        variant="primary"
+                        onClick={handleUpdate}
+                        disabled={downloading}
+                    >
+                        {downloading ? "Installing..." : "🚀 Update Now (Automatic)"}
+                    </Button>
+                )}
+            </Flex>
+
+            <Divider className={Margins.top20} />
+
+            <Paragraph className={Margins.top16} style={{ fontSize: 12, opacity: 0.6 }}>
+                {t('Clicking "Update Now" will automatically download the latest version and restart your client.')}
+            </Paragraph>
         </SettingsTab>
     );
 }
 
-export default IS_UPDATER_DISABLED
-    ? null
-    : wrapTab(Updater, "Updater");
+export default wrapTab(UpdaterTab, "Updater");

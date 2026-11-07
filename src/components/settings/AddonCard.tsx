@@ -18,13 +18,12 @@
 
 import "./AddonCard.css";
 
-import { Paragraph } from "@components/Paragraph";
-import { AddonBadge } from "@components/settings/PluginBadge";
+import { Badge } from "@components/Badge";
+import { BaseText } from "@components/BaseText";
 import { Switch } from "@components/Switch";
-import { Text } from "@components/Text";
 import { classNameFactory } from "@utils/css";
-import { useRef } from "@webpack/common";
-import type { MouseEventHandler, ReactNode } from "react";
+import { Tooltip, useRef } from "@webpack/common";
+import type { ComponentType, MouseEventHandler, ReactNode } from "react";
 
 const cl = classNameFactory("vc-addon-");
 
@@ -35,15 +34,19 @@ interface Props {
     setEnabled: (enabled: boolean) => void;
     disabled?: boolean;
     isNew?: boolean;
+    sourceBadge?: ReactNode;
+    tooltip?: string;
     onMouseEnter?: MouseEventHandler<HTMLDivElement>;
     onMouseLeave?: MouseEventHandler<HTMLDivElement>;
 
     infoButton?: ReactNode;
     footer?: ReactNode;
     author?: ReactNode;
+    iconType?: "nightcord" | "other";
+    customIcon?: ComponentType<any>;
 }
 
-export function AddonCard({ disabled, isNew, name, infoButton, footer, author, enabled, setEnabled, description, onMouseEnter, onMouseLeave }: Props) {
+export function AddonCard({ disabled, isNew, sourceBadge, tooltip, name, infoButton, footer, author, enabled, setEnabled, description, onMouseEnter, onMouseLeave, iconType, customIcon: CustomIcon }: Props) {
     const titleRef = useRef<HTMLDivElement>(null);
     const titleContainerRef = useRef<HTMLDivElement>(null);
 
@@ -53,46 +56,73 @@ export function AddonCard({ disabled, isNew, name, infoButton, footer, author, e
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
         >
-            <div className={cl("header")}>
-                <div className={cl("name-author")}>
-                    <Text weight="bold" className={cl("name")}>
-                        <div ref={titleContainerRef} className={cl("title-container")}>
-                            <div
-                                ref={titleRef}
-                                className={cl("title")}
-                                onMouseOver={() => {
-                                    const title = titleRef.current!;
-                                    const titleContainer = titleContainerRef.current!;
+            <div className={cl("top-row")}>
+                <div className={cl("title-group")}>
+                    <div className={cl("icon")}>
+                        {CustomIcon ? (
+                            <CustomIcon width={18} height={18} color="currentColor" fill="currentColor" />
+                        ) : (
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7 1.49 0 2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></svg>
+                        )}
+                    </div>
+                    <div className={cl("name-author")}>
+                        <BaseText size="md" weight="bold" className={cl("name")}>
+                            <div ref={titleContainerRef} className={cl("title-container")}>
+                                <div
+                                    ref={titleRef}
+                                    className={cl("title")}
+                                    onMouseOver={() => {
+                                        const title = titleRef.current!;
+                                        const titleContainer = titleContainerRef.current!;
 
-                                    title.style.setProperty("--offset", `${titleContainer.clientWidth - title.scrollWidth}px`);
-                                    title.style.setProperty("--duration", `${Math.max(0.5, (title.scrollWidth - titleContainer.clientWidth) / 7)}s`);
-                                }}
-                            >
-                                {name}
+                                        title.style.setProperty("--offset", `${titleContainer.clientWidth - title.scrollWidth}px`);
+                                        title.style.setProperty("--duration", `${Math.max(0.5, (title.scrollWidth - titleContainer.clientWidth) / 7)}s`);
+                                    }}
+                                >
+                                    {name}
+                                </div>
                             </div>
-                        </div>
-                        {isNew && <AddonBadge text="NEW" color="#ED4245" />}
-                    </Text>
-
-                    {!!author && (
-                        <Paragraph size="md" className={cl("author")}>
-                            {author}
-                        </Paragraph>
-                    )}
+                            {isNew && <Badge text="NEW" variant="danger" />}
+                        </BaseText>
+                    </div>
                 </div>
-
-                {infoButton}
-
-                <Switch
-                    checked={enabled}
-                    onChange={setEnabled}
-                    disabled={disabled}
-                />
             </div>
 
-            <Paragraph className={cl("note")}>{description}</Paragraph>
+            <div
+                className={cl("note")}
+                style={{ lineHeight: "1.25em", fontSize: "small", margin: "12px 0", flex: 1 }}
+                title={description ? description.toString() : ""}
+            >
+                {description}
+            </div>
 
-            {footer}
-        </div >
+            <div className={cl("bottom-row")}>
+                <div className={cl("actions")}>
+                    {sourceBadge && (
+                        <Tooltip text={tooltip}>
+                            {({ onMouseEnter, onMouseLeave }) => (
+                                <div
+                                    className={cl("source")}
+                                    onMouseEnter={onMouseEnter}
+                                    onMouseLeave={onMouseLeave}
+                                >
+                                    {sourceBadge}
+                                </div>
+                            )}
+                        </Tooltip>
+                    )}
+                    {infoButton}
+                </div>
+                {setEnabled.toString() !== "() => {}" && (
+                    <Switch
+                        checked={enabled}
+                        onChange={setEnabled}
+                        disabled={disabled}
+                    />
+                )}
+            </div>
+
+            {footer && <div className={cl("footer")}>{footer}</div>}
+        </div>
     );
 }

@@ -8,7 +8,6 @@ import { FormSwitch } from "@components/FormSwitch";
 import { Heading } from "@components/Heading";
 import { Paragraph } from "@components/Paragraph";
 import { Margins } from "@utils/margins";
-import { classes } from "@utils/misc";
 import { Parser, TextInput, useEffect, useState } from "@webpack/common";
 
 const RegexGuide = {
@@ -54,7 +53,8 @@ export function ReplacementInput({ replacement, setReplacement, replacementError
 
     return (
         <>
-            <Heading className={Margins.bottom8}>Replacement</Heading>
+            {/* FormTitle adds a class if className is not set, so we set it to an empty string to prevent that */}
+            <Heading className="">Replacement</Heading>
             <TextInput
                 value={replacement?.toString()}
                 onChange={onChange}
@@ -62,7 +62,7 @@ export function ReplacementInput({ replacement, setReplacement, replacementError
             />
             {!isFunc && (
                 <div>
-                    <Heading className={classes(Margins.top8, Margins.bottom8)}>Cheat Sheet</Heading>
+                    <Heading className={Margins.top8}>Cheat Sheet</Heading>
 
                     {Object.entries(RegexGuide).map(([placeholder, desc]) => (
                         <Paragraph key={placeholder}>
@@ -76,7 +76,7 @@ export function ReplacementInput({ replacement, setReplacement, replacementError
                 className={Margins.top16}
                 value={isFunc}
                 onChange={setIsFunc}
-                title={'Treat "Replacement" as a function'}
+                title={"Treat Replacement as function"}
                 description='"Replacement" will be evaluated as a function if this is enabled'
                 hideBorder
             />

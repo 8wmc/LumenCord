@@ -1,93 +1,129 @@
 /*
- * Vencord, a modification for Discord's desktop app
- * Copyright (c) 2022 Vendicated and contributors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
+ * Nightcord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 
 import "./fixDiscordBadgePadding.css";
+import {domain} from "../../../../DOMAIN.json"
 
-import { _getBadges, BadgePosition, BadgeRarity, BadgeUserArgs, DirectoryBadge, ProfileBadge } from "@api/Badges";
+import { _getBadges, BadgePosition, BadgeUserArgs, ProfileBadge } from "@api/Badges";
+import { loadOwnHiddenBadgeSources } from "@api/BadgeVisibility";
 import ErrorBoundary from "@components/ErrorBoundary";
-import { Flex } from "@components/Flex";
-import { Heart } from "@components/Heart";
-import { CopyIcon, LinkIcon } from "@components/Icons";
-import { Paragraph } from "@components/Paragraph";
-import DonateButton from "@components/settings/DonateButton";
-import { openContributorModal } from "@components/settings/tabs";
-import { Text } from "@components/Text";
 import { Devs } from "@utils/constants";
 import { copyWithToast } from "@utils/discord";
 import { Logger } from "@utils/Logger";
-import { Margins } from "@utils/margins";
-import { shouldShowContributorBadge } from "@utils/misc";
+import { shouldShowContributorBadge, shouldShowEquicordContributorBadge } from "@utils/misc";
 import definePlugin from "@utils/types";
-import { ContextMenuApi, Menu, Modal, openModal, showToast, UserStore } from "@webpack/common";
+import { ContextMenuApi, FluxDispatcher, Menu, Toasts, UserStore } from "@webpack/common";
+
+import Plugins, { PluginMeta } from "~plugins";
+
+import { EquicordDonorModal, EquicordTranslatorModal, VencordDonorModal, GenericBadgeModal } from "./modals";
+
+const CONTRIBUTOR_BADGE = "https://cdn.discordapp.com/emojis/1092089799109775453.png?size=64";
+const EQUICORD_CONTRIBUTOR_BADGE = "https://equicord.org/assets/favicon.png";
+const USERPLUGIN_CONTRIBUTOR_BADGE = "https://equicord.org/assets/icons/misc/userplugin.png";
 
 const ContributorBadge: ProfileBadge = {
-    id: "vencord_contributor_badge",
     description: "Vencord Contributor",
-    infoLabel: "Vencord",
-    rarity: BadgeRarity.MYTHIC,
-    iconSrc: "https://cdn.discordapp.com/emojis/1562267648857997356.webp?size=128",
-    largeIconSrc: "https://cdn.discordapp.com/emojis/1562267648857997356.webp?size=512",
+    iconSrc: CONTRIBUTOR_BADGE,
     position: BadgePosition.START,
     shouldShow: ({ userId }) => shouldShowContributorBadge(userId),
-    onClick: (_, { userId }) => openContributorModal(UserStore.getUser(userId))
+    onClick: (_, { userId }) => import("@components/settings/tabs/plugins/ContributorModal").then(m => m.openContributorModal(UserStore.getUser(userId)))
 };
 
+const EquicordContributorBadge: ProfileBadge = {
+    description: "Equicord Contributor",
+    iconSrc: EQUICORD_CONTRIBUTOR_BADGE,
+    position: BadgePosition.START,
+    shouldShow: ({ userId }) => shouldShowEquicordContributorBadge(userId),
+    onClick: (_, { userId }) => import("@components/settings/tabs/plugins/ContributorModal").then(m => m.openContributorModal(UserStore.getUser(userId))),
+    props: {
+        style: {
+            borderRadius: "0%",
+            maxHeight: "22px",
+            maxWidth: "22px"
+        }
+    },
+};
 
-interface DonorBadge {
-    tooltip?: string;
-    badge: string;
-    "2"?: 1;
+const UserPluginContributorBadge: ProfileBadge = {
+    description: "User Plugin Contributor",
+    iconSrc: USERPLUGIN_CONTRIBUTOR_BADGE,
+    position: BadgePosition.START,
+    shouldShow: ({ userId }) => {
+        if (!IS_DEV) return false;
+        const allPlugins = Object.values(Plugins);
+        return allPlugins.some(p => {
+            const pluginMeta = PluginMeta[p.name];
+            return pluginMeta?.userPlugin && p.authors.some(a => a.id.toString() === userId);
+        });
+    },
+    onClick: (_, { userId }) => import("@components/settings/tabs/plugins/ContributorModal").then(m => m.openContributorModal(UserStore.getUser(userId))),
+    props: {
+        style: {
+            borderRadius: "0%",
+            maxHeight: "22px",
+            maxWidth: "22px"
+        }
+    },
+};
+
+let DonorBadges = {} as Record<string, Array<Record<"tooltip" | "badge", string>>>;
+let EquicordDonorBadges = {} as Record<string, Array<Record<"tooltip" | "badge", string>>>;
+let NightcordBadges = {} as Record<string, Array<{ icon: string; placeholder: string; uuid: string; }>>;
+let IllegalcordBadges = {} as Record<string, Array<Record<"tooltip" | "badge", string>>>;
+
+async function loadBadges(url: string, noCache = false) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2500);
+    try {
+        const init: RequestInit = { signal: controller.signal };
+        if (noCache) init.cache = "no-cache";
+
+        const res = await fetch(url, init);
+        if (!res.ok) return {};
+        return await res.json();
+    } catch {
+        return {};
+    } finally {
+        clearTimeout(timeout);
+    }
 }
 
-let DonorBadges = {} as Record<string, Array<DonorBadge>>;
-let DirectoryBadges = {} as Record<string, DirectoryBadge>;
+async function loadNightcordBadges(noCache = false): Promise<Record<string, any>> {
+    // Use main-process net.fetch to bypass CORS restrictions on the Nightcord API.
+    // Only available in desktop (Electron) context.
+    if (IS_WEB || typeof VencordNative?.nightcord?.netFetch !== "function") {
+        return loadBadges(`https://api.${domain}/badges`, noCache);
+    }
+    try {
+        const res = await VencordNative.nightcord.netFetch(`https://api.${domain}/badges`, { noCache });
+        if (!res?.ok || !res.data || typeof res.data !== "object") return {};
+        return res.data as Record<string, any>;
+    } catch {
+        return {};
+    }
+}
 
-async function loadBadges(noCache = false) {
-    const init = {} as RequestInit;
-    if (noCache)
-        init.cache = "no-cache";
+async function loadAllBadges(noCache = false) {
+    const [vencord, equicord, nightcord, illegalcord] = await Promise.allSettled([
+        loadBadges("https://badges.vencord.dev/badges.json", noCache),
+        loadBadges("https://badge.equicord.org/badges.json", noCache),
+        loadNightcordBadges(noCache),
+        loadBadges("https://raw.githubusercontent.com/ImHisako/ImHisako/refs/heads/main/Images/badges.json", noCache)
+    ]);
 
-    DonorBadges = await fetch("https://badges.vencord.dev/badges.json", init)
-        .then(r => r.json());
+    DonorBadges = (vencord.status === "fulfilled" && vencord.value) ? vencord.value : {};
+    EquicordDonorBadges = (equicord.status === "fulfilled" && equicord.value) ? equicord.value : {};
+    NightcordBadges = (nightcord.status === "fulfilled" && nightcord.value) ? nightcord.value : {};
+    IllegalcordBadges = (illegalcord.status === "fulfilled" && illegalcord.value) ? illegalcord.value : {};
 }
 
 let intervalId: any;
 
-function toDirectoryBadge(b: ProfileBadge, userId: string): DirectoryBadge {
-    const id = `vc-${userId}-${b.id}`;
-
-    return DirectoryBadges[id] ??= {
-        badge_id: id,
-        name: b.name ?? b.description ?? "",
-        description: b.detail ?? b.description ?? b.name ?? "",
-        info_label: b.infoLabel ?? "Vencord",
-        rarity: b.rarity ?? BadgeRarity.COMMON,
-        simple_icon_url: b.iconSrc!,
-        complex_icon_static_url: b.largeIconSrc ?? b.iconSrc!,
-        obtained_at: b.obtainedAt,
-        is_earnable: false,
-        owned: true,
-        hidden: false,
-        tiers: []
-    };
-}
-
-function BadgeContextMenu({ badge }: { badge: Omit<ProfileBadge, "id"> & BadgeUserArgs; }) {
+export function BadgeContextMenu({ badge }: { badge: ProfileBadge & BadgeUserArgs; }) {
     return (
         <Menu.Menu
             navId="vc-badge-context"
@@ -99,7 +135,6 @@ function BadgeContextMenu({ badge }: { badge: Omit<ProfileBadge, "id"> & BadgeUs
                     id="vc-badge-copy-name"
                     label="Copy Badge Name"
                     action={() => copyWithToast(badge.description!)}
-                    leadingAccessory={{ type: "icon", icon: CopyIcon }}
                 />
             )}
             {badge.iconSrc && (
@@ -107,7 +142,6 @@ function BadgeContextMenu({ badge }: { badge: Omit<ProfileBadge, "id"> & BadgeUs
                     id="vc-badge-copy-link"
                     label="Copy Badge Image Link"
                     action={() => copyWithToast(badge.iconSrc!)}
-                    leadingAccessory={{ type: "icon", icon: LinkIcon }}
                 />
             )}
         </Menu.Menu>
@@ -117,7 +151,7 @@ function BadgeContextMenu({ badge }: { badge: Omit<ProfileBadge, "id"> & BadgeUs
 export default definePlugin({
     name: "BadgeAPI",
     description: "API to add badges to users",
-    authors: [Devs.Megu, Devs.Ven, Devs.TheSun, Devs.kaxtusik],
+    authors: [Devs.Megu, Devs.Ven, Devs.TheSun],
     required: true,
     patches: [
         {
@@ -141,10 +175,6 @@ export default definePlugin({
                 {
                     match: /href:(\i)\.link/,
                     replace: "...$self.getBadgeMouseEventHandlers($1),$&"
-                },
-                {
-                    match: /legacyBadgeId:(\i),userId:(\i),.{0,100}?=\i,\i=\(0,\i\.\i\)\(\1\)/,
-                    replace: "$&??$self.getDirectoryBadgeId($1,$2)"
                 }
             ]
         },
@@ -154,20 +184,6 @@ export default definePlugin({
                 match: /getBadges\(\)\{.{0,100}?return\[/,
                 replace: "$&...$self.getBadges(this),"
             }
-        },
-        {
-            find: '"BadgeDirectoryStore"',
-            replacement: {
-                match: /getBadgeById\((\i),(\i)\)\{/,
-                replace: "$&const vencordBadge=$self.getDirectoryBadge($1);if(vencordBadge)return vencordBadge;"
-            }
-        },
-        {
-            find: "badge_directory_closed",
-            replacement: {
-                match: /(\i\.\i\.getBadges\((\i)\))(?=:\[\],\[\2\]\))/,
-                replace: "[...$1,...$self.getDirectoryBadges($2)]"
-            }
         }
     ],
 
@@ -176,62 +192,110 @@ export default definePlugin({
         return DonorBadges;
     },
 
+    get EquicordDonorBadges() {
+        return EquicordDonorBadges;
+    },
+
+    get NightcordBadges() {
+        return NightcordBadges;
+    },
+
     toolboxActions: {
         async "Refetch Badges"() {
-            await loadBadges(true);
-            showToast({ text: "Successfully refetched badges!", variant: "success" });
+            await loadAllBadges(true);
+            Toasts.show({
+                id: Toasts.genId(),
+                message: "Successfully refetched badges!",
+                type: Toasts.Type.SUCCESS
+            });
         }
     },
 
-    userProfileBadge: ContributorBadge,
+    userProfileBadges: [ContributorBadge, EquicordContributorBadge, UserPluginContributorBadge],
 
-    async start() {
-        await loadBadges();
+    start() {
+        loadAllBadges().catch(() => {});
 
         clearInterval(intervalId);
-        intervalId = setInterval(loadBadges, 1000 * 60 * 30); // 30 minutes
+        intervalId = setInterval(loadAllBadges, 1000 * 60 * 30); // 30 minutes
+
+        // Charge la preference "badges caches" (locale + cloud) pour l'utilisateur courant.
+        // Sans cet appel, myHiddenSources reste vide en memoire a chaque redemarrage,
+        // meme si la sauvegarde existe deja dans localStorage/le cloud.
+        const currentUserId = UserStore.getCurrentUser()?.id;
+        if (currentUserId) {
+            loadOwnHiddenBadgeSources(currentUserId).catch(() => {});
+        }
+        FluxDispatcher.subscribe("CONNECTION_OPEN", this.onConnectionOpen);
+    },
+
+    onConnectionOpen() {
+        const currentUserId = UserStore.getCurrentUser()?.id;
+        if (currentUserId) {
+            loadOwnHiddenBadgeSources(currentUserId).catch(() => {});
+        }
     },
 
     async stop() {
         clearInterval(intervalId);
-        DirectoryBadges = {};
+        FluxDispatcher.unsubscribe("CONNECTION_OPEN", this.onConnectionOpen);
     },
 
-    getBadges(profile: { userId: string; guildId: string; }) {
+    dedupeBadges(badges: any[]) {
+        if (!Array.isArray(badges)) return badges;
+        const seenKeys = new Set<string>();
+
+        return badges.filter(b => {
+            if (!b) return false;
+
+            const id = (b.id || b.key || b.uuid || "").toString().toLowerCase();
+            const normId = id
+                .replace("hypesquad_online_house_", "hypesquad_house_")
+                .replace("premium_early_supporter", "early_supporter")
+                .replace("moderator_programs_alumni", "certified_moderator");
+
+            const icon = (b.iconSrc || b.icon || b.badge || "").toString();
+            let iconHash = "";
+            if (icon) {
+                try {
+                    const parts = icon.split("/");
+                    const last = parts.pop() || icon;
+                    iconHash = last.split("?")[0].replace(/\.(png|webp|jpg|svg|gif)$/i, "");
+                } catch {
+                    iconHash = icon;
+                }
+            }
+
+            const primaryKey = icon || iconHash || (normId && !normId.startsWith("nightcord") ? normId : "");
+            if (!primaryKey) return true;
+
+            if (seenKeys.has(primaryKey)) return false;
+
+            seenKeys.add(primaryKey);
+            if (normId && !normId.startsWith("nightcord") && !normId.startsWith("nc-")) seenKeys.add(normId);
+            if (iconHash) seenKeys.add(iconHash);
+
+            return true;
+        });
+    },
+
+    getBadges(profile: any) {
         if (!profile) return [];
 
         try {
-            return _getBadges(profile);
+            const userId = profile.userId || profile.id || profile.user?.id || profile.author?.id || (typeof profile.getId === "function" ? profile.getId() : "");
+            const guildId = profile.guildId || profile.guild_id || "";
+            return _getBadges({ ...profile, userId: String(userId || ""), guildId: String(guildId || "") });
         } catch (e) {
             new Logger("BadgeAPI#getBadges").error(e);
             return [];
         }
     },
 
-    getDirectoryBadge(id: string) {
-        return DirectoryBadges[id];
-    },
-
-    getDirectoryBadges(userId: string) {
-        return this.getBadges({ userId, guildId: "" })
-            .filter(b => b.iconSrc)
-            .map(b => toDirectoryBadge(b, userId));
-    },
-
-    getDirectoryBadgeId(badgeId: string, userId?: string) {
-        if (!userId) return;
-
-        const badge = this.getBadges({ userId, guildId: "" })
-            .find(b => b.id === badgeId && b.iconSrc);
-
-        if (badge) return toDirectoryBadge(badge, userId).badge_id;
-    },
-
     renderBadgeComponent: ErrorBoundary.wrap((badge: ProfileBadge & BadgeUserArgs) => {
         const Component = badge.component!;
         return <Component {...badge} />;
     }, { noop: true }),
-
 
     getBadgeMouseEventHandlers(badge: ProfileBadge & BadgeUserArgs) {
         const handlers = {} as Record<string, (e: React.MouseEvent) => void>;
@@ -240,97 +304,126 @@ export default definePlugin({
 
         const { onClick, onContextMenu } = badge;
 
-        if (onClick) handlers.onClick = e => onClick(e, badge);
+        if (onClick) handlers.onClick = e => {
+            e.preventDefault();
+            e.stopPropagation();
+            onClick(e, badge);
+        };
         if (onContextMenu) handlers.onContextMenu = e => onContextMenu(e, badge);
 
         return handlers;
     },
 
     getDonorBadges(userId: string) {
-        return DonorBadges[userId]?.map((badge, idx) => {
-            let largeIconSrc: string | undefined = undefined;
-            if (badge["2"]) {
-                const url = new URL(badge.badge);
-                url.pathname = url.pathname.replace(/(\.[^/.]+)$/, "@2x$1");
-                largeIconSrc = url.toString();
-            }
+        if (!userId) return [];
+        return DonorBadges[userId]?.map(badge => ({
+            iconSrc: badge.badge,
+            description: badge.tooltip,
+            position: BadgePosition.START,
+            props: {
+                style: {
+                    borderRadius: "0%",
+                    maxHeight: "22px",
+                    maxWidth: "22px"
+                }
+            },
+            onContextMenu(event, badge) {
+                ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
+            },
+            onClick() {
+                return GenericBadgeModal(badge, "Vencord");
+            },
+        } satisfies ProfileBadge));
+    },
 
-            return {
-                id: `vencord_donor_badge_${idx}`,
-                iconSrc: badge.badge,
-                largeIconSrc,
-                description: badge.tooltip,
-                name: badge.tooltip,
-                infoLabel: "Vencord Donor",
-                rarity: BadgeRarity.MYTHIC,
-                position: BadgePosition.START,
-                props: {
-                    style: {
-                        borderRadius: "50%",
-                        transform: "scale(0.9)" // The image is a bit too big compared to default badges
-                    }
-                },
-                onContextMenu(event, badge) {
-                    ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
-                },
-                onClick() {
-                    openModal(props => (
-                        <ErrorBoundary noop onError={() => {
-                            props.onClose();
-                            VencordNative.native.openExternal("https://github.com/sponsors/Vendicated");
-                        }}>
-                            <Modal
-                                {...props}
-                                title={
-                                    <Text
-                                        size="lg"
-                                        weight="semibold"
-                                        style={{
-                                            width: "100%",
-                                            textAlign: "center"
-                                        }}
-                                    >
-                                        <Flex justifyContent="center" alignItems="center" gap="0.5em">
-                                            <Heart />
-                                            Vencord Donor
-                                        </Flex>
-                                    </Text>
-                                }
-                            >
-                                <div>
-                                    <Flex>
-                                        <img
-                                            role="presentation"
-                                            src="https://cdn.discordapp.com/emojis/1026533070955872337.png"
-                                            alt=""
-                                            style={{ margin: "auto" }}
-                                        />
-                                        <img
-                                            role="presentation"
-                                            src="https://cdn.discordapp.com/emojis/1026533090627174460.png"
-                                            alt=""
-                                            style={{ margin: "auto" }}
-                                        />
-                                    </Flex>
-                                    <div style={{ padding: "1em" }}>
-                                        <Paragraph>
-                                            This badge is a special perk for Vencord Donors
-                                        </Paragraph>
-                                        <Paragraph className={Margins.top16}>
-                                            Please consider supporting the development of Vencord by becoming a donor. It would mean a lot!!
-                                        </Paragraph>
-                                    </div>
-                                </div>
-                                <div>
-                                    <Flex justifyContent="center" style={{ width: "100%" }}>
-                                        <DonateButton variant="overlayPrimary" />
-                                    </Flex>
-                                </div>
-                            </Modal>
-                        </ErrorBoundary>
-                    ));
-                },
-            } satisfies ProfileBadge;
-        });
+    getEquicordDonorBadges(userId: string) {
+        if (!userId) return [];
+        return EquicordDonorBadges[userId]?.map(badge => ({
+            iconSrc: badge.badge,
+            description: badge.tooltip,
+            position: BadgePosition.START,
+            props: {
+                style: {
+                    borderRadius: "0%",
+                    maxHeight: "22px",
+                    maxWidth: "22px"
+                }
+            },
+            onContextMenu(event, badge) {
+                ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
+            },
+            onClick() {
+                return badge.tooltip === "Equicord Translator" ? EquicordTranslatorModal() : GenericBadgeModal(badge, "Equicord");
+            },
+        } satisfies ProfileBadge));
+    },
+
+    getNightcordBadges(userId: string) {
+        try {
+            if (!userId) return [];
+            const userBadges = NightcordBadges[userId] || NightcordBadges[String(userId)];
+            if (!userBadges || !Array.isArray(userBadges)) return [];
+
+            return userBadges
+                .filter(badge => badge && (badge.icon || badge.badge) && badge.visible !== false)
+                .map(badge => {
+                    const iconSrc = badge.icon || badge.badge;
+                    const description = badge.placeholder || badge.description || badge.tooltip || "Nightcord Badge";
+                    const badgeId = badge.uuid || badge.id || `nightcord-${description}-${userId}`;
+
+                    return {
+                        id: badgeId,
+                        key: badgeId,
+                        iconSrc,
+                        description,
+                        position: BadgePosition.START,
+                        props: {
+                            style: {
+                                borderRadius: "50%",
+                                maxHeight: "22px",
+                                maxWidth: "22px"
+                            }
+                        },
+                        onContextMenu(event, b) {
+                            ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={b as any} />);
+                        },
+                        onClick() {
+                            return GenericBadgeModal({
+                                iconSrc,
+                                icon: iconSrc,
+                                description,
+                                placeholder: description,
+                                ...badge
+                            }, "Nightcord");
+                        }
+                    } satisfies ProfileBadge;
+                });
+        } catch (e) {
+            console.error("[BadgeAPI] Error processing nightcord badges for", userId, e);
+            return [];
+        }
+    },
+
+    getIllegalcordBadges(userId: string) {
+        return IllegalcordBadges[userId]?.map(badge => ({
+            iconSrc: badge.badge,
+            description: badge.tooltip,
+            position: BadgePosition.START,
+            props: {
+                style: {
+                    borderRadius: "50%",
+                    maxHeight: "22px",
+                    maxWidth: "22px"
+                }
+            },
+            onContextMenu(event, badge) {
+                ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
+            },
+            onClick() {
+                return GenericBadgeModal(badge, "Illegalcord");
+            },
+        } satisfies ProfileBadge));
     }
 });
+
+

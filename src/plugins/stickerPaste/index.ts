@@ -15,11 +15,9 @@ export default definePlugin({
 
     patches: [
         {
-            // This function is a util func from another module
-            // but it only has once use here so it's inlined
-            find: '.STICKER_PICKER:return""',
+            find: ".stickers,previewSticker:",
             replacement: {
-                match: /(?<=\){)if\(\i\.\i\.getUploadCount/,
+                match: /if\(\i\.\i\.getUploadCount/,
                 replace: "return true;$&",
             }
         }

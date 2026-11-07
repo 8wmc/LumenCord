@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { Toasts } from "@webpack/common";
+
 import { Auth, authorize, getToken, updateAuth } from "./auth";
 import { Review, ReviewDBCurrentUser, ReviewDBUser, ReviewType } from "./entities";
 import { settings } from "./settings";
@@ -49,7 +51,7 @@ async function rdbRequest<T = unknown>(path: string, options: RequestInit = {}):
         ...options,
         headers,
     }).catch(err => {
-        showToast({ text: "Network error: Failed to connect to ReviewDB.", variant: "critical" });
+        showToast("Network error: Failed to connect to ReviewDB.", Toasts.Type.FAILURE);
         return null;
     });
 
@@ -59,7 +61,7 @@ async function rdbRequest<T = unknown>(path: string, options: RequestInit = {}):
 
     if (!res.ok) {
         const message = data?.message ?? `ReviewDB: Request failed with status ${res.status}`;
-        showToast({ text: message, variant: "critical" });
+        showToast(message, Toasts.Type.FAILURE);
         return null;
     }
 
@@ -90,7 +92,7 @@ export async function getReviews(id: string, { limit, offset = 0, fetchVotes = f
         };
 
     if (!req.ok) {
-        showToast({ text: res.message, variant: "critical" });
+        showToast(res.message, Toasts.Type.FAILURE);
         return {
             ...res,
             reviews: [
@@ -138,11 +140,11 @@ export async function getReviewVotes(id: string): Promise<ReviewVote[]> {
     return res?.votes ?? [];
 }
 
-export async function addReview(review: { userid: string; comment: string; }): Promise<UserReviewsData | null> {
+export async function addReview(review): Promise<UserReviewsData | null> {
 
     const token = await getToken();
     if (!token) {
-        showToast({ text: "Please authorize to add a review.", variant: "critical" });
+        showToast("Please authorize to add a review.");
         authorize();
         return null;
     }
@@ -151,7 +153,7 @@ export async function addReview(review: { userid: string; comment: string; }): P
         method: "PUT",
         body: JSON.stringify(review),
     });
-    if (data?.message) showToast({ text: data.message });
+    if (data?.message) showToast(data.message);
     return data;
 }
 
@@ -162,7 +164,7 @@ export async function deleteReview(id: number): Promise<UserReviewsData | null> 
             reviewid: id
         })
     });
-    if (data?.message) showToast({ text: data.message });
+    if (data?.message) showToast(data.message);
     return data;
 }
 
@@ -173,13 +175,13 @@ export async function reportReview(id: number) {
             reviewid: id,
         })
     });
-    if (data?.message) showToast({ text: data.message });
+    if (data?.message) showToast(data.message);
 }
 
 export async function voteReview(id: number, isUpvote: boolean) {
     const token = await getToken();
     if (!token) {
-        showToast({ text: "Please authorize to vote on reviews.", variant: "critical" });
+        showToast("Please authorize to vote on reviews.");
         authorize();
         return false;
     }
@@ -197,7 +199,7 @@ export async function voteReview(id: number, isUpvote: boolean) {
 export async function deleteReviewVote(id: number) {
     const token = await getToken();
     if (!token) {
-        showToast({ text: "Please authorize to vote on reviews.", variant: "critical" });
+        showToast("Please authorize to vote on reviews.");
         authorize();
         return false;
     }
@@ -222,7 +224,7 @@ async function patchBlock(action: "block" | "unblock", userId: string) {
 
     if (!data) return;
 
-    showToast({ text: `Successfully ${action}ed user`, variant: "success" });
+    showToast(`Successfully ${action}ed user`, Toasts.Type.SUCCESS);
 
     if (Auth?.user?.blockedUsers) {
         const newBlockedUsers = action === "block"

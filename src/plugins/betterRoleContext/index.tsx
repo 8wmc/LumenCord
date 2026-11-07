@@ -23,6 +23,19 @@ const loadRoleMembers = findByCodeLazy(".GUILD_ROLE_MEMBER_IDS(", "requestMember
 
 const DeveloperMode = getUserSettingLazy("appearance", "developerMode")!;
 
+async function openRoleIconModal(roleId: string, roleIcon: string, roleName: string) {
+    const format = settings.store.roleIconFileFormat;
+    const original = `${location.protocol}//${window.GLOBAL_ENV.CDN_HOST}/role-icons/${roleId}/${roleIcon}.${format}`;
+    const url = original.replace(`//${window.GLOBAL_ENV.CDN_HOST}/`, "//media.discordapp.net/");
+
+    openImageModal({
+        url,
+        original,
+        height: 128,
+        width: 128
+    });
+}
+
 function PencilIcon() {
     return (
         <svg
@@ -75,7 +88,6 @@ const settings = definePluginSettings({
     }
 });
 
-
 export function buildExtraRoleContextMenuItems(role: Role, guild: Guild, popoutRef?: React.RefObject<any>) {
     if (!role) return { before: [], after: [] };
 
@@ -90,7 +102,6 @@ export function buildExtraRoleContextMenuItems(role: Role, guild: Guild, popoutR
                     GuildSettingsActions.selectRole(role.id);
                 }}
                 icon={PencilIcon}
-                leadingAccessory={{ type: "icon", icon: PencilIcon }}
             />
         ),
         role.colorString && (
@@ -100,7 +111,6 @@ export function buildExtraRoleContextMenuItems(role: Role, guild: Guild, popoutR
                 label="Copy Role Color"
                 action={() => copyToClipboard(role.colorString!)}
                 icon={AppearanceIcon}
-                leadingAccessory={{ type: "icon", icon: AppearanceIcon }}
             />
         )
     ].filter(isTruthy);
@@ -119,7 +129,6 @@ export function buildExtraRoleContextMenuItems(role: Role, guild: Guild, popoutR
                     });
                 }}
                 icon={ImageIcon}
-                leadingAccessory={{ type: "icon", icon: ImageIcon }}
             />
         ),
         popoutRef && (
@@ -150,7 +159,6 @@ export function buildExtraRoleContextMenuItems(role: Role, guild: Guild, popoutR
                                 {...popoutProps}
                             >
                                 <div className={MenuItemClasses.label}>View Role Members</div>
-                                {/* FIXME: update to new icon style */}
                                 <div className={MenuItemClasses.iconContainer}>
                                     <RoleMembersIcon />
                                 </div>
@@ -189,7 +197,6 @@ export function openRoleContextMenu(event: React.MouseEvent<HTMLElement>, { guil
                     id="vc-better-role-context-copy-role-id"
                     label={getIntlMessage("COPY_ID_ROLE")}
                     icon={CopyIdIcon}
-                    leadingAccessory={{ type: "icon", icon: CopyIdIcon }}
                     action={() => copyToClipboard(role.id)}
                 />
             </Menu.Menu>
@@ -206,19 +213,13 @@ export default definePlugin({
     settings,
     openRoleContextMenu,
     patches: [
+        // Conflicts with RoleColorEverywhere which changes the code at the end of our match. (and also uses same find & similar match)
+        // However, BetterRoleContext applies first (alphabetic order), so it's not an issue
         {
             find: 'tutorialId:"whos-online',
             replacement: {
-                match: /(?<=#{intl::CHANNEL_MEMBERS_A11Y_LABEL}.{0,400}?)children:(?=.{0,20}?(?:—|\\u2014) ",\i\])/,
+                match: /(?<=#{intl::CHANNEL_MEMBERS_A11Y_LABEL}.{0,200}?"aria-hidden":!0,)children:.{0,200}?(?:—|\\u2014) ",\i\]\}\)\]/,
                 replace: "onContextMenu:e=>$self.openRoleContextMenu(e,arguments[0]),$&"
-            }
-        },
-        // member list role headers
-        {
-            find: "?null:new Intl.NumberFormat",
-            replacement: {
-                match: /(?<=#{intl::CHANNEL_MEMBERS_A11Y_LABEL},\{title:\i,count:\i\}\)\}\),\(0,\i\.jsxs\)\("div",\{)/,
-                replace: "onContextMenu:e=>$self.openRoleContextMenu(e,arguments[0]),"
             }
         }
     ],
@@ -238,9 +239,43 @@ export default definePlugin({
             const role = GuildRoleStore.getRole(guild.id, id);
             if (!role) return;
 
-            const { before, after } = buildExtraRoleContextMenuItems(role, guild, popoutRef);
-            children.unshift(...before);
-            children.push(...after);
+            if (role.colorString) {
+                children.unshift(
+                    <Menu.MenuItem
+                        id="vc-copy-role-color"
+                        label="Copy Role Color"
+                        action={() => copyToClipboard(role.colorString!)}
+                        icon={AppearanceIcon}
+                    />
+                );
+            }
+
+            if (PermissionStore.getGuildPermissionProps(guild).canManageRoles) {
+                children.unshift(
+                    <Menu.MenuItem
+                        id="vc-edit-role"
+                        label="Edit Role"
+                        action={async () => {
+                            await GuildSettingsActions.open(guild.id, "ROLES");
+                            GuildSettingsActions.selectRole(id);
+                        }}
+                        icon={PencilIcon}
+                    />
+                );
+            }
+
+            if (role.icon) {
+                const roleIcon = role.icon;
+                children.push(
+                    <Menu.MenuItem
+                        id="vc-view-role-icon"
+                        label="View Role Icon"
+                        action={() => openRoleIconModal(role.id, roleIcon, role.name)}
+                        icon={ImageIcon}
+                    />
+
+                );
+            }
         }
     }
 });

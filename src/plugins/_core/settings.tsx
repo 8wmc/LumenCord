@@ -1,32 +1,88 @@
 /*
- * Vencord, a modification for Discord's desktop app
- * Copyright (c) 2022 Vendicated and Megumin
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
+ * Nightcord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 
 import { definePluginSettings } from "@api/Settings";
-import { BackupRestoreIcon, MainSettingsIcon, PaintbrushIcon, PatchHelperIcon, PlaceholderIcon, PluginsIcon, UpdaterIcon, VesktopSettingsIcon } from "@components/Icons";
-import { BackupAndRestoreTab, PatchHelperTab, PluginsTab, ThemesTab, UpdaterTab, VencordTab } from "@components/settings/tabs";
+import { BackupRestoreIcon, CloudIcon, LogIcon, MagnifyingGlassIcon, MainSettingsIcon, PaintbrushIcon, PatchHelperIcon, PluginsIcon, TrashIcon, UpdaterIcon } from "@components/Icons";
+import { LangIcon } from "@components/LangIcon";
+import {
+    BackupAndRestoreTab,
+    ChangelogTab,
+    FontsTab,
+    LanguageTab,
+    PatchHelperTab,
+    PluginsTab,
+    StatusTab,
+    SyncTab,
+    ThemesTab,
+    UpdaterTab,
+    VencordTab,
+} from "@components/settings";
+import { CreateThemeTab } from "@components/settings/tabs/createTheme/CreateThemeTab";
+import { PencilSparkleIcon } from "@components/settings/tabs/createTheme/PencilSparkleIcon";
+import { CustomizationIcon, CustomizationTab } from "customization";
+
+function FontIcon(props: IconProps) {
+    return (
+        <svg {...props} width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="4 7 4 4 20 4 20 7" />
+            <line x1="9" y1="20" x2="15" y2="20" />
+            <line x1="12" y1="4" x2="12" y2="20" />
+        </svg>
+    );
+}
+
+function StatusPulseIcon(props: IconProps) {
+    return (
+        <svg {...props} width={24} height={24} viewBox="-3.5 -3.5 31 31" fill="currentColor">
+            <path d="M2 3a1 1 0 0 1 1-1c6.92 0 12.97 3.7 16.3 9.22.22.37-.15.86-.6.9-.2.02-.4.06-.6.12a.58.58 0 0 1-.67-.22C14.43 7.2 9.1 4 3 4a1 1 0 0 1-1-1ZM15.48 15.15a.5.5 0 0 0 .02-.47A14 14 0 0 0 3 7a1 1 0 0 0 0 2 12 12 0 0 1 10.95 7.09c.18.39.74.44.96.07l.57-1.01ZM2 13a1 1 0 0 1 1-1 9 9 0 0 1 9 9 1 1 0 1 1-2 0 7 7 0 0 0-7-7 1 1 0 0 1-1-1ZM2 17.83c0-.46.37-.83.83-.83C5.13 17 7 18.87 7 21.17c0 .46-.37.83-.83.83H3a1 1 0 0 1-1-1v-3.17Z" />
+            <path fillRule="evenodd" clipRule="evenodd" d="M18.09 14.63c.4-.7 1.43-.7 1.82 0l3.96 6.9c.38.66-.12 1.47-.91 1.47h-7.92c-.79 0-1.3-.81-.91-1.48l3.96-6.9Zm.46 1.87h.9c.3 0 .52.26.5.55l-.22 2.02c-.01.16-.17.26-.33.23a1.93 1.93 0 0 0-.8 0c-.16.03-.32-.07-.33-.23l-.21-2.02a.5.5 0 0 1 .5-.55ZM19 22a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" />
+        </svg>
+    );
+}
+
+function CodeIcon(props: IconProps) {
+    return (
+        <svg {...props} width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="16 18 22 12 16 6" />
+            <polyline points="8 6 2 12 8 18" />
+        </svg>
+    );
+}
+import IconsTab from "@nightcordplugins/iconViewer/components/IconsTab";
+import DmPurgerTab from "@nightcordplugins/dmPurger/components/DmPurgerTab";
+import { gitHashShort } from "@shared/vencordUserAgent";
 import { Devs } from "@utils/constants";
 import { isTruthy } from "@utils/guards";
 import definePlugin, { IconProps, OptionType } from "@utils/types";
 import { waitFor } from "@webpack";
+import { t } from "@api/i18n";
 import { React } from "@webpack/common";
 import type { ComponentType, PropsWithChildren, ReactNode } from "react";
 
-import gitHash from "~git-hash";
+const enum LayoutType {
+    ROOT = 0,
+    SECTION = 1,
+    SIDEBAR_ITEM = 2,
+    PANEL = 3,
+    SPLIT = 4,
+    CATEGORY = 5,
+    ACCORDION = 6,
+    LIST = 7,
+    RELATED = 8,
+    FIELD_SET = 9,
+    TAB_ITEM = 10,
+    STATIC = 11,
+    BUTTON = 12,
+    TOGGLE = 13,
+    SLIDER = 14,
+    SELECT = 15,
+    RADIO = 16,
+    NAVIGATOR = 17,
+    CUSTOM = 18
+}
 
 let LayoutTypes = {
     SECTION: 1,
@@ -37,12 +93,11 @@ let LayoutTypes = {
 };
 waitFor(["SECTION", "SIDEBAR_ITEM", "PANEL", "CUSTOM"], v => LayoutTypes = v);
 
-const FallbackSectionTypes = {
-    HEADER: "HEADER",
-    DIVIDER: "DIVIDER",
-    CUSTOM: "CUSTOM"
-};
-type SectionTypes = typeof FallbackSectionTypes;
+const enum SectionType {
+    HEADER = "HEADER",
+    DIVIDER = "DIVIDER",
+    CUSTOM = "CUSTOM"
+}
 
 type SettingsLocation =
     | "top"
@@ -53,7 +108,7 @@ type SettingsLocation =
     | "bottom";
 
 interface SettingsLayoutNode {
-    type: number;
+    type: LayoutType;
     key?: string;
     legacySearchKey?: string;
     getLegacySearchKey?(): string;
@@ -66,12 +121,13 @@ interface SettingsLayoutNode {
 }
 
 interface EntryOptions {
-    key: string,
-    title: string,
-    panelTitle?: string,
-    Component: ComponentType<{}>,
+    key: string;
+    title: string;
+    panelTitle?: string;
+    Component: ComponentType<{}>;
     Icon: ComponentType<IconProps>;
 }
+
 interface SettingsLayoutBuilder {
     key?: string;
     buildLayout(): SettingsLayoutNode[];
@@ -80,7 +136,7 @@ interface SettingsLayoutBuilder {
 const settings = definePluginSettings({
     settingsLocation: {
         type: OptionType.SELECT,
-        description: "Where to put the LumenCord settings section",
+        description: "Where to put the Nightcord settings section",
         options: [
             { label: "At the very top", value: "top" },
             { label: "Above the Nitro section", value: "aboveNitro", default: true },
@@ -90,12 +146,32 @@ const settings = definePluginSettings({
             { label: "At the very bottom", value: "bottom" },
         ] as { label: string; value: SettingsLocation; default?: boolean; }[]
     },
-    includeVencordInfoWhenCopying: {
+    showStatus: {
         type: OptionType.BOOLEAN,
-        description: "Also copy LumenCord info (LumenCord, Electron, Chromium) when clicking the version info in the bottom left area of the Settings page",
-        default: true
+        description: "Show Status in the settings sidebar",
+        default: false,
+    },
+    showCreateTheme: {
+        type: OptionType.BOOLEAN,
+        description: "Show Create Theme in the settings sidebar",
+        default: false,
     }
 });
+
+const settingsSectionMap: [string, string][] = [
+    ["EquicordSettings", "equicord_main_panel"],
+    ["EquicordPlugins", "equicord_plugins_panel"],
+    ["EquicordThemes", "equicord_themes_panel"],
+    ["EquicordCreateTheme", "equicord_create_theme_panel"],
+    ["EquicordUpdater", "equicord_updater_panel"],
+    ["EquicordChangelog", "equicord_changelog_panel"],
+    ["EquicordCloud", "equicord_cloud_panel"],
+    ["EquicordBackupAndRestore", "equicord_backup_restore_panel"],
+    ["EquicordPatchHelper", "equicord_patch_helper_panel"],
+    ["NightcordFonts", "nightcord_fonts_panel"],
+    ["NightcordDmPurger", "nightcord_dm_purger_panel"],
+    ["EquibopSettings", "equicord_equibop_settings_panel"],
+];
 
 export default definePlugin({
     name: "Settings",
@@ -104,15 +180,29 @@ export default definePlugin({
     required: true,
 
     settings,
+    settingsSectionMap,
 
     patches: [
         {
             find: "#{intl::COPY_VERSION}",
             replacement: [
                 {
-                    match: /"footnote\/normal".{0,300}?(?=null!=(\i)&&(.{0,20}\i\.\i.{0,200}?,children:).{0,15}?("span"),{className:(\i\.\i),children:\["Build Override: ",\1\.id,\i\]\}\)\}\))/,
-                    replace: (m, _buildOverride, makeRow, component, className) => {
-                        return `${m},$self.makeInfoElements(${component},${className}).map(e=>${makeRow}e})),`;
+                    match: /\.RELEASE_CHANNEL/,
+                    replace: "$&.replace(/^./, c => c.toUpperCase())"
+                },
+                {
+                    match: /"text-xxs\/normal".{0,300}?(?=null!=(\i)&&(.{0,20}\i\.\i.{0,200}?,children:).{0,15}?("span"),({className:\i\.\i,children:\["Build Override: ",\1\.id\]\})\)\}\))/,
+                    replace: (m, _buildOverride, makeRow, component, props) => {
+                        props = props.replace(/children:\[.+\]/, "");
+                        return `${m},$self.makeInfoElements(${component},${props}).map(e=>${makeRow}e})),`;
+                    }
+                },
+                {
+                    noWarn: true,
+                    match: /"text-xs\/normal".{0,300}?\[\(0,\i\.jsxs?\)\((.{1,10}),(\{[^{}}]+\{.{0,20}className:\i.\i,.+?\})\)," "/,
+                    replace: (m, component, props) => {
+                        props = props.replace(/children:\[.+\]/, "");
+                        return `${m},$self.makeInfoElements(${component},${props})`;
                     }
                 },
                 {
@@ -127,6 +217,13 @@ export default definePlugin({
                 match: /(\i)\.buildLayout\(\)(?=\.map)/,
                 replace: "$self.buildLayout($1)"
             }
+        },
+        {
+            find: "getWebUserSettingFromSection",
+            replacement: {
+                match: /new Map\(\[(?=\[.{0,10}\.ACCOUNT,.{0,10}\.ACCOUNT_PANEL)/,
+                replace: "new Map([...$self.getSettingsSectionMappings(),"
+            }
         }
     ],
 
@@ -136,7 +233,7 @@ export default definePlugin({
         const panel: SettingsLayoutNode = {
             key: key + "_panel",
             type: LayoutTypes.PANEL,
-            useTitle: () => panelTitle,
+            useTitle: () => t(panelTitle),
             buildLayout: () => [{
                 type: LayoutTypes.CATEGORY,
                 key: key + "_category",
@@ -144,7 +241,7 @@ export default definePlugin({
                     type: LayoutTypes.CUSTOM,
                     key: key + "_custom",
                     Component: Component,
-                    useSearchTerms: () => [title]
+                    useSearchTerms: () => [t(title)]
                 }]
             }]
         };
@@ -152,80 +249,140 @@ export default definePlugin({
         return ({
             key,
             type: LayoutTypes.SIDEBAR_ITEM,
-            useTitle: () => title,
+            useTitle: () => t(title),
             icon: () => <Icon width={20} height={20} />,
             buildLayout: () => [panel]
         });
+    },
+
+    getSettingsSectionMappings() {
+        return settingsSectionMap;
     },
 
     buildLayout(originalLayoutBuilder: SettingsLayoutBuilder) {
         const layout = originalLayoutBuilder.buildLayout();
         if (originalLayoutBuilder.key !== "$Root") return layout;
         if (!Array.isArray(layout)) return layout;
-
-        if (layout.some(s => s?.key === "vencord_section")) return layout;
+        if (layout.some(s => s?.key === "equicord_section")) return layout;
 
         const { buildEntry } = this;
 
-        const vencordEntries: SettingsLayoutNode[] = [
+        const mainEntry = buildEntry({
+            key: "equicord_main",
+            title: "LumenCord",
+            panelTitle: "LumenCord Settings",
+            Component: VencordTab,
+            Icon: MainSettingsIcon
+        });
+
+        const fullEntries: SettingsLayoutNode[] = [
+            mainEntry,
+
             buildEntry({
-                key: "vencord_main",
-                title: "LumenCord",
-                panelTitle: "LumenCord Settings",
-                Component: VencordTab,
-                Icon: MainSettingsIcon
-            }),
-            buildEntry({
-                key: "vencord_plugins",
+                key: "equicord_plugins",
                 title: "Plugins",
                 Component: PluginsTab,
                 Icon: PluginsIcon
             }),
             buildEntry({
-                key: "vencord_themes",
+                key: "equicord_themes",
                 title: "Themes",
                 Component: ThemesTab,
                 Icon: PaintbrushIcon
             }),
+            buildEntry({
+                key: "nightcord_customization",
+                title: "Customization",
+                Component: CustomizationTab,
+                Icon: CustomizationIcon
+            }),
+            buildEntry({
+                key: "nightcord_fonts",
+                title: "Fonts",
+                panelTitle: "LumenCord Fonts",
+                Component: FontsTab,
+                Icon: FontIcon
+            }),
+            settings.store.showStatus && buildEntry({
+                key: "nightcord_status",
+                title: "Status",
+                panelTitle: "LumenCord Status",
+                Component: StatusTab,
+                Icon: StatusPulseIcon
+            }),
+            settings.store.showCreateTheme && buildEntry({
+                key: "equicord_create_theme",
+                title: "Create Theme",
+                panelTitle: "Theme Creator",
+                Component: CreateThemeTab,
+                Icon: PencilSparkleIcon
+            }),
+
             !IS_UPDATER_DISABLED && UpdaterTab && buildEntry({
-                key: "vencord_updater",
+                key: "equicord_updater",
                 title: "Updater",
                 panelTitle: "LumenCord Updater",
                 Component: UpdaterTab,
                 Icon: UpdaterIcon
             }),
             buildEntry({
-                key: "vencord_backup_restore",
+                key: "equicord_changelog",
+                title: "Changelog",
+                Component: ChangelogTab,
+                Icon: LogIcon,
+            }),
+            buildEntry({
+                key: "equicord_backup_restore",
                 title: "Backup & Restore",
                 Component: BackupAndRestoreTab,
                 Icon: BackupRestoreIcon
             }),
-            !IS_STANDALONE && PatchHelperTab && buildEntry({
-                key: "vencord_patch_helper",
+            buildEntry({
+                key: "nightcord_sync",
+                title: "Synchronization",
+                panelTitle: "LumenCord Sync",
+                Component: SyncTab,
+                Icon: CloudIcon
+            }),
+            buildEntry({
+                key: "nightcord_dm_purger",
+                title: "DM Purger",
+                panelTitle: "DM Purger",
+                Component: DmPurgerTab,
+                Icon: TrashIcon
+            }),
+            buildEntry({
+                key: "nightcord_language",
+                title: "Language",
+                Component: LanguageTab,
+                Icon: LangIcon
+            }),
+            IS_DEV && PatchHelperTab && buildEntry({
+                key: "equicord_patch_helper",
                 title: "Patch Helper",
                 Component: PatchHelperTab,
                 Icon: PatchHelperIcon
             }),
-            ...this.customEntries.map(buildEntry),
-            // TODO: Remove deprecated customSections in a future update
-            ...this.customSections.map((func, i) => {
-                const { section, element, label } = func(FallbackSectionTypes);
-                if (Object.values(FallbackSectionTypes).includes(section)) return null;
-
-                return buildEntry({
-                    key: `vencord_deprecated_custom_${section}`,
-                    title: label,
-                    Component: element,
-                    Icon: section === "Vesktop" ? VesktopSettingsIcon : PlaceholderIcon
-                });
-            })
+            buildEntry({
+                key: "nightcord_icon_finder",
+                title: "Icon Finder",
+                Component: IconsTab,
+                Icon: MagnifyingGlassIcon
+            }),
+            ...this.customEntries.map(buildEntry)
         ].filter(isTruthy);
 
-        const vencordSection: SettingsLayoutNode = {
-            key: "vencord_section",
+        try {
+            if (localStorage.getItem("LumenCord_stealthMode") === "1") {
+                return layout;
+            }
+        } catch { }
+
+        const equicordSection: SettingsLayoutNode = {
+            key: "equicord_section",
             type: LayoutTypes.SECTION,
-            useTitle: () => "LumenCord Settings",
-            buildLayout: () => vencordEntries
+            useTitle: () => t("LumenCord Settings"),
+            buildLayout: () => fullEntries
         };
 
         const { settingsLocation } = settings.store;
@@ -234,9 +391,9 @@ export default definePlugin({
             top: "user_section",
             aboveNitro: "billing_section",
             belowNitro: "billing_section",
-            aboveActivity: "games_and_apps_section",
-            belowActivity: "games_and_apps_section",
-            bottom: "utility_section"
+            aboveActivity: "activity_section",
+            belowActivity: "activity_section",
+            bottom: "logout_section"
         };
 
         const key = places[settingsLocation] ?? places.top;
@@ -248,42 +405,49 @@ export default definePlugin({
             idx += 1;
         }
 
-        layout.splice(idx, 0, vencordSection);
+        layout.splice(idx, 0, equicordSection);
 
         return layout;
     },
 
-    /** @deprecated Use customEntries */
-    customSections: [] as ((SectionTypes: SectionTypes) => any)[],
+    customSections: [] as ((SectionTypes: Record<string, string>) => { section: string; element: ComponentType; label: string; id?: string; })[],
     customEntries: [] as EntryOptions[],
 
     get electronVersion() {
-        return VencordNative.native.getVersions().electron || window.legcord?.electron || null;
+        return VencordNative.native.getVersions().electron ?? window.legcord?.electron ?? null;
     },
 
     get chromiumVersion() {
         try {
-            return VencordNative.native.getVersions().chrome
-                // @ts-expect-error Typescript will add userAgentData IMMEDIATELY
-                || navigator.userAgentData?.brands?.find(b => b.brand === "Chromium" || b.brand === "Google Chrome")?.version
-                || null;
-        } catch { // inb4 some stupid browser throws unsupported error for navigator.userAgentData, it's only in chromium
+            return (
+                VencordNative.native.getVersions().chrome ??
+                // @ts-expect-error userAgentData types
+                navigator.userAgentData?.brands?.find(
+                    (b: { brand: string; }) => b.brand === "Chromium" || b.brand === "Google Chrome",
+                )?.version ??
+                null
+            );
+        } catch {
             return null;
         }
     },
 
-    get additionalInfo() {
-        if (IS_DEV) return " (Dev)";
-        if (IS_WEB) return " (Web)";
-        if (IS_VESKTOP) return ` (Vesktop v${VesktopNative.app.getVersion()})`;
-        if (IS_STANDALONE) return " (Standalone)";
-        return "";
+    getVersionInfo(support = true) {
+        let version = "";
+
+        if (IS_DEV) version = "Dev Build";
+        if (IS_WEB) version = "Web";
+        if (IS_VESKTOP) version = `Vesktop v${VesktopNative.app.getVersion()}`;
+        if (IS_EQUIBOP) version = `Equibop v${VesktopNative.app.getVersion()}`;
+        if (IS_STANDALONE) version = "Standalone";
+
+        return support && version ? ` (${version})` : version;
     },
 
     getInfoRows() {
-        const { electronVersion, chromiumVersion, additionalInfo } = this;
+        const { electronVersion, chromiumVersion, getVersionInfo } = this;
 
-        const rows = [`LumenCord ${gitHash}${additionalInfo}`];
+        const rows = [`Nightcord ${gitHashShort}${getVersionInfo()}`];
 
         if (electronVersion) rows.push(`Electron ${electronVersion}`);
         if (chromiumVersion) rows.push(`Chromium ${chromiumVersion}`);
@@ -292,13 +456,17 @@ export default definePlugin({
     },
 
     getInfoString() {
-        if (!settings.store.includeVencordInfoWhenCopying) return "";
         return "\n" + this.getInfoRows().join("\n");
     },
 
-    makeInfoElements(Component: ComponentType<PropsWithChildren<{ className?: string; }>>, className: string) {
-        return this.getInfoRows().map((text, i) =>
-            <Component key={i} className={className}>{text}</Component>
-        );
-    }
+    makeInfoElements(
+        Component: ComponentType<React.PropsWithChildren>,
+        props: PropsWithChildren,
+    ) {
+        return this.getInfoRows().map((text, i) => (
+            <Component key={i} {...props}>
+                {text}
+            </Component>
+        ));
+    },
 });

@@ -1,27 +1,133 @@
 .vc-plugin-modal-header {
+    align-items: flex-start;
+    position: relative;
+    padding: 16px 16px 0 24px;
+}
+
+.vc-plugin-modal-header-content {
     display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+.vc-plugin-modal-header-trailing {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.vc-plugin-modal-title {
+    color: var(--text-strong);
+    padding-right: 32px;
+}
+
+.vc-plugin-modal-description {
+    color: var(--text-subtle);
+    padding-right: 60px;
+}
+
+.vc-plugin-modal-links {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+}
+
+.vc-plugin-modal-confirm [class*="footer"] {
+    flex-direction: row-reverse;
+    gap: var(--space-8, 8px);
+}
+
+.vc-plugin-modal-confirm [class*="footer"] > button {
+    flex: 1;
+    margin: 0;
+    width: 100%;
+}
+
+.vc-plugin-modal-warning {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-feedback-critical);
+}
+
+.vc-settings-modal-content {
+    padding-bottom: 24px;
 }
 
 .vc-plugin-modal-info {
-    display: flex;
-    gap: 1em;
-    justify-content: space-between;
-    align-items: start;
-}
-
-.vc-plugin-modal-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 8px;
-}
-
-.vc-plugin-modal-tag {
     align-items: center;
-    border: 1px solid var(--border-normal);
-    border-radius: 9999px;
+}
+
+/* Blurred API Key / Secret Input Container */
+.nc-api-key-container {
+    position: relative;
     display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.nc-api-key-input-wrapper {
+    flex: 1;
+    width: 100%;
+    position: relative;
+}
+
+.nc-api-key-input-wrapper input {
+    padding-right: 40px !important;
+}
+
+.nc-blurred-api-key input,
+.nc-blurred-api-key textarea,
+input.nc-blurred-api-key {
+    filter: blur(6px) !important;
+    user-select: none !important;
+    transition: filter 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nc-blurred-api-key:hover input,
+.nc-blurred-api-key:focus-within input,
+.nc-blurred-api-key:hover textarea,
+.nc-blurred-api-key:focus-within textarea,
+input.nc-blurred-api-key:hover,
+input.nc-blurred-api-key:focus {
+    filter: blur(0px) !important;
+    user-select: text !important;
+}
+
+.nc-api-key-toggle-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
     justify-content: center;
-    padding: 6px 12px;
-    color: var(--text-default);
+    color: #ffffff !important;
+    border-radius: 4px;
+    transition: color 0.15s ease, background-color 0.15s ease;
+    z-index: 2;
+}
+
+.nc-api-key-toggle-btn svg {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+}
+
+.nc-api-key-toggle-btn:hover {
+    color: #ffffff !important;
+    background-color: var(--background-modifier-hover);
+}
+
+.nc-api-key-toggle-btn:active {
+    color: #ffffff !important;
+    background-color: var(--background-modifier-active);
 }

@@ -4,18 +4,17 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Button } from "@components/Button";
 import { Heading } from "@components/Heading";
 import { Paragraph } from "@components/Paragraph";
 import { Margins } from "@utils/margins";
 import { canonicalizeMatch, canonicalizeReplace } from "@utils/patches";
 import { makeCodeblock } from "@utils/text";
 import { ReplaceFn } from "@utils/types";
-import { Parser, useMemo, useState } from "@webpack/common";
+import { Button, Parser, useMemo, useState } from "@webpack/common";
 import type { Change } from "diff";
 
-// Do not include diff in standalone builds (side effects import)
-if (!IS_STANDALONE) {
+// Do not include diff in non dev builds (side effects import)
+if (IS_DEV) {
     var differ = require("diff") as typeof import("diff");
 }
 
@@ -56,7 +55,7 @@ function Match({ matchResult }: { matchResult: RegExpMatchArray | null; }) {
 
     return (
         <>
-            <Heading className={Margins.bottom8}>Match</Heading>
+            <Heading>Match</Heading>
             <div style={{ userSelect: "text" }}>{Parser.parse(fullMatch)}</div>
             <div style={{ userSelect: "text" }}>{Parser.parse(groups)}</div>
         </>
@@ -86,7 +85,7 @@ function Diff({ diff }: { diff: Change[] | null; }) {
 
     return (
         <>
-            <Heading className={Margins.bottom8}>Diff</Heading>
+            <Heading>Diff</Heading>
             {diffLines}
         </>
     );
@@ -121,7 +120,7 @@ export function PatchPreview({ module, match, replacement, setReplacementError }
 
     return (
         <>
-            <Heading className={Margins.bottom8} style={{ userSelect: "text" }}>Module {id}</Heading>
+            <Heading>Module {id}</Heading>
 
             <Match matchResult={matchResult} />
             <Diff diff={diff} />
@@ -131,10 +130,7 @@ export function PatchPreview({ module, match, replacement, setReplacementError }
                     className={Margins.top20}
                     onClick={() => {
                         try {
-                            const isArrowFunction = patchedCode.startsWith("(");
-                            const wrappedCode = "0," + (!isArrowFunction ? "function" : "") + patchedCode.slice(patchedCode.indexOf("("));
-                            Function(wrappedCode);
-
+                            Function(patchedCode.replace(/^(?=function\()/, "0,"));
                             setCompileResult([true, "Compiled successfully"]);
                         } catch (err) {
                             setCompileResult([false, (err as Error).message]);

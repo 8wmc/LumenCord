@@ -22,16 +22,16 @@ import { definePluginSettings } from "@api/Settings";
 import { Button } from "@components/Button";
 import { ExpandableSection } from "@components/ExpandableCard";
 import { Flex } from "@components/Flex";
-import { Heading } from "@components/Heading";
-import { Margins } from "@components/margins";
+import { HeadingSecondary } from "@components/Heading";
 import { Paragraph } from "@components/Paragraph";
 import { Span } from "@components/Span";
 import { TooltipContainer } from "@components/TooltipContainer";
-import { Devs } from "@utils/constants";
-import { classNameFactory } from "@utils/css";
+import { Devs, EquicordDevs, SUPPORT_CHANNEL_IDS } from "@utils/constants";
+import { classNameFactory } from "@utils/index";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
-import { React, TextInput, useState } from "@webpack/common";
+import { Message } from "@vencord/discord-types";
+import { React, Select, TextInput, UserStore, useState } from "@webpack/common";
 
 const cl = classNameFactory("vc-textReplace-");
 
@@ -40,6 +40,7 @@ interface Rule {
     find: string;
     replace: string;
     onlyIfIncludes: string;
+    scope: string;
     id: string;
 }
 
@@ -60,6 +61,7 @@ const makeEmptyRule: () => Rule = () => ({
     find: "",
     replace: "",
     onlyIfIncludes: "",
+    scope: "myMessages",
     id: crypto.randomUUID()
 });
 
@@ -172,15 +174,13 @@ function matchesRuleSearch(rule: Rule, query: string) {
 
 function normalizeRule(rule: Rule) {
     rule.name ??= "";
+    rule.scope ??= "myMessages";
     rule.id ??= crypto.randomUUID();
 }
-
-type DropIndicator = { index: number; position: "before" | "after"; };
 
 function TextReplace({ title, description, rulesArray, isRegex = false }: TextReplaceProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-    const [dropIndicator, setDropIndicator] = useState<DropIndicator | null>(null);
 
     function onClickRemove(index: number) {
         rulesArray.splice(index, 1);
@@ -195,6 +195,12 @@ function TextReplace({ title, description, rulesArray, isRegex = false }: TextRe
         }
     }
 
+    const scopeOptions = [
+        { label: "Apply to your messages (visible to everyone)", value: "myMessages" },
+        { label: "Apply to others' messages (only visible to you)", value: "othersMessages" },
+        { label: "Apply to all messages", value: "allMessages" }
+    ];
+
     const filteredRules = rulesArray.reduce((acc: RuleWithIndex[], rule, index) => {
         if (matchesRuleSearch(rule, searchQuery)) {
             acc.push({ rule, index });
@@ -203,49 +209,24 @@ function TextReplace({ title, description, rulesArray, isRegex = false }: TextRe
         return acc;
     }, []);
 
-    const handleDragOver = (index: number) => (e: React.DragEvent) => {
+    const handleDrop = (index: number) => (e: React.DragEvent) => {
         e.preventDefault();
-        if (draggedIndex === null || searchQuery) return;
-
-        const rect = e.currentTarget.getBoundingClientRect();
-        const position = e.clientY - rect.top < rect.height / 2 ? "before" : "after";
-        setDropIndicator(prev =>
-            prev?.index === index && prev.position === position ? prev : { index, position }
-        );
-    };
-
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        if (draggedIndex === null || !dropIndicator || searchQuery) {
-            setDraggedIndex(null);
-            setDropIndicator(null);
-            return;
-        }
-
-        let targetIndex = dropIndicator.index + (dropIndicator.position === "after" ? 1 : 0);
-        if (targetIndex > draggedIndex) targetIndex -= 1;
-
-        if (targetIndex !== draggedIndex) {
-            const draggedRule = rulesArray.splice(draggedIndex, 1)[0];
-            rulesArray.splice(targetIndex, 0, draggedRule);
-        }
-
+        if (draggedIndex === null || draggedIndex === index || searchQuery) return;
+        const draggedRule = rulesArray.splice(draggedIndex, 1)[0];
+        rulesArray.splice(index, 0, draggedRule);
         setDraggedIndex(null);
-        setDropIndicator(null);
     };
 
     return (
         <>
             <div>
-                <Heading className={Margins.bottom8}>{title}</Heading>
+                <HeadingSecondary>{title}</HeadingSecondary>
                 <Paragraph>{description}</Paragraph>
-                <div className={cl("search-input")}>
-                    <TextInput
-                        placeholder="Search for a rule..."
-                        value={searchQuery}
-                        onChange={setSearchQuery}
-                    />
-                </div>
+                <TextInput
+                    placeholder="Search for a rule..."
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                />
             </div>
             <Flex flexDirection="column" style={{ gap: "0.5em", paddingBottom: "1.25em" }}>
                 {!filteredRules.length && searchQuery && (
@@ -254,16 +235,10 @@ function TextReplace({ title, description, rulesArray, isRegex = false }: TextRe
                 {filteredRules.map(({ rule, index }) =>
                     <div
                         key={rule.id}
-                        onDragOver={handleDragOver(index)}
-                        onDrop={handleDrop}
-                        style={{ opacity: draggedIndex === index ? 0.5 : 1, position: "relative" }}
+                        onDragOver={e => e.preventDefault()}
+                        onDrop={handleDrop(index)}
+                        style={{ opacity: draggedIndex === index ? 0.5 : 1 }}
                     >
-                        {dropIndicator?.index === index && dropIndicator.position === "before" && (
-                            <div className={cl("drop-indicator")} style={{ top: 0 }} />
-                        )}
-                        {dropIndicator?.index === index && dropIndicator.position === "after" && (
-                            <div className={cl("drop-indicator")} style={{ bottom: 0 }} />
-                        )}
                         <ExpandableSection
                             renderContent={() => (
                                 <>
@@ -293,6 +268,14 @@ function TextReplace({ title, description, rulesArray, isRegex = false }: TextRe
                                             onChange={e => onChange(e, index, "onlyIfIncludes")}
                                         />
                                     </div>
+                                    <div style={{ marginTop: "0.25em" }}>
+                                        <Select
+                                            options={scopeOptions}
+                                            isSelected={e => e === rule.scope}
+                                            select={e => onChange(e, index, "scope")}
+                                            serialize={e => e}
+                                        />
+                                    </div>
                                     {isRegex && renderFindError(rule.find)}
                                     <Button
                                         className={cl("delete-button")}
@@ -310,10 +293,7 @@ function TextReplace({ title, description, rulesArray, isRegex = false }: TextRe
                                     setDraggedIndex(index);
                                     e.dataTransfer.setData("text/plain", index.toString());
                                 }}
-                                onDragEnd={() => {
-                                    setDraggedIndex(null);
-                                    setDropIndicator(null);
-                                }}
+                                onDragEnd={() => setDraggedIndex(null)}
                                 style={{ cursor: searchQuery ? "default" : "grab", flex: 1 }}
                             >
                                 <Paragraph weight="medium" size="md">
@@ -347,16 +327,16 @@ function TextReplaceTesting() {
 
     return (
         <div>
-            <Heading className={Margins.bottom8}>Rule Tester</Heading>
+            <HeadingSecondary>Rule Tester</HeadingSecondary>
             <Flex flexDirection="column" gap={6}>
                 <TextInput placeholder="Type a message to test rules on" onChange={setValue} />
-                <TextInput placeholder="Message with rules applied" editable={false} value={applyRules(value)} style={{ opacity: 0.7 }} />
+                <TextInput placeholder="Message with rules applied" editable={false} value={applyRules(value, "allMessages")} style={{ opacity: 0.7 }} />
             </Flex>
         </div>
     );
 }
 
-function applyRules(content: string): string {
+function applyRules(content: string, scope: "myMessages" | "othersMessages" | "allMessages"): string {
     if (content.length === 0) {
         return content;
     }
@@ -364,6 +344,7 @@ function applyRules(content: string): string {
     for (const rule of settings.store.stringRules) {
         if (!rule.find) continue;
         if (rule.onlyIfIncludes && !content.includes(rule.onlyIfIncludes)) continue;
+        if (rule.scope !== "allMessages" && rule.scope !== scope && scope !== "allMessages") continue;
 
         content = ` ${content} `.replaceAll(rule.find, rule.replace.replaceAll("\\n", "\n")).replace(/^\s|\s$/g, "");
     }
@@ -371,6 +352,7 @@ function applyRules(content: string): string {
     for (const rule of settings.store.regexRules) {
         if (!rule.find) continue;
         if (rule.onlyIfIncludes && !content.includes(rule.onlyIfIncludes)) continue;
+        if (rule.scope !== "allMessages" && rule.scope !== scope && scope !== "allMessages") continue;
 
         try {
             const regex = stringToRegex(rule.find);
@@ -384,14 +366,42 @@ function applyRules(content: string): string {
     return content;
 }
 
-const TEXT_REPLACE_RULES_CHANNEL_ID = "1102784112584040479";
+function modifyIncomingMessage(message: Message) {
+    const currentUser = UserStore.getCurrentUser();
+    const messageAuthor = message.author;
+
+    if (!message.content || !currentUser?.id || !messageAuthor?.id || messageAuthor.id === currentUser.id) {
+        return message.content;
+    }
+
+    return applyRules(message.content, "othersMessages");
+}
+
+const TEXT_REPLACE_RULES_EXEMPT_CHANNEL_IDS = [
+    "1102784112584040479", // Vencord's Text Replace Rules Channel
+    "1419347113745059961", // Equicord's Requests Channel
+    ...SUPPORT_CHANNEL_IDS
+];
+
 export default definePlugin({
     name: "TextReplace",
     description: "Replace text in your messages. You can find pre-made rules in the #textreplace-rules channel in Vencord's Server",
+    dependencies: ["MessagePopoverAPI"],
     tags: ["Chat", "Customisation", "Utility"],
-    authors: [Devs.AutumnVN, Devs.TheKodeToad],
-
+    authors: [Devs.AutumnVN, Devs.TheKodeToad, EquicordDevs.Etorix, EquicordDevs.Ape],
+    isModified: true,
     settings,
+    modifyIncomingMessage,
+
+    patches: [
+        {
+            find: "!1,hideSimpleEmbedContent",
+            replacement: {
+                match: /(let{toAST:.{0,125}?)\(\i\?\?\i\).content/,
+                replace: "const textReplaceContent=$self.modifyIncomingMessage(arguments[2]?.contentMessage??arguments[1]);$1textReplaceContent"
+            }
+        },
+    ],
 
     start() {
         const { stringRules, regexRules } = settings.store;
@@ -401,8 +411,8 @@ export default definePlugin({
     },
 
     onBeforeMessageSend(channelId, msg) {
-        // Channel used for sharing rules, applying rules here would be messy
-        if (channelId === TEXT_REPLACE_RULES_CHANNEL_ID) return;
-        msg.content = applyRules(msg.content);
+        // Replacing text in channels used for sharing/requesting rules may be messy.
+        if (TEXT_REPLACE_RULES_EXEMPT_CHANNEL_IDS.includes(channelId)) return;
+        msg.content = applyRules(msg.content, "myMessages");
     }
 });

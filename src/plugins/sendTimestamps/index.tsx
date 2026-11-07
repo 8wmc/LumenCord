@@ -41,13 +41,13 @@ const settings = definePluginSettings({
 function parseTime(time: string) {
     const cleanTime = time.slice(1, -1).replace(/(\d)(AM|PM)$/i, "$1 $2");
 
-    const date = new Date(`${new Date().toDateString()} ${cleanTime}`);
-    if (Number.isNaN(date.getTime())) return time;
+    let ms = new Date(`${new Date().toDateString()} ${cleanTime}`).getTime() / 1000;
+    if (isNaN(ms)) return time;
 
-    // tomorrow can be 23 or 25 hours away across dst changes
-    if (Date.now() > date.getTime()) date.setDate(date.getDate() + 1);
+    // add 24h if time is in the past
+    if (Date.now() / 1000 > ms) ms += 86400;
 
-    return `<t:${Math.round(date.getTime() / 1000)}:t>`;
+    return `<t:${Math.round(ms)}:t>`;
 }
 
 const Formats = ["", "t", "T", "d", "D", "f", "F", "s", "S", "R"] as const;
@@ -90,7 +90,7 @@ function PickerModal(props: RenderModalProps) {
                 }}
             />
 
-            <Heading className={Margins.bottom8}>Timestamp Format</Heading>
+            <Heading tag="h5">Timestamp Format</Heading>
             <div className={cl("format-select")}>
                 <Select
                     options={
@@ -111,7 +111,7 @@ function PickerModal(props: RenderModalProps) {
                 />
             </div>
 
-            <Heading className={Margins.bottom8}>Preview</Heading>
+            <Heading tag="h5" className={Margins.bottom8}>Preview</Heading>
             <Paragraph className={cl("preview-text")}>
                 {rendered} ({formatted})
             </Paragraph>
@@ -155,6 +155,7 @@ const SendTimestampButton: ChatBarButtonFactory = ({ isAnyChat }) => {
 export default definePlugin({
     name: "SendTimestamps",
     description: "Send timestamps easily via chat box button & text shortcuts. Read the extended description!",
+    dependencies: ["ChatInputButtonAPI", "MessagePopoverAPI"],
     tags: ["Chat", "Commands"],
     authors: [Devs.Ven, Devs.Tyler, Devs.Grzesiek11],
     settings,

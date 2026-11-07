@@ -18,7 +18,6 @@
 
 import "./shiki.css";
 
-import { migratePluginSetting } from "@api/Settings";
 import { enableStyle } from "@api/Styles";
 import { Devs } from "@utils/constants";
 import definePlugin, { ReporterTestable } from "@utils/types";
@@ -31,7 +30,6 @@ import { settings } from "./settings";
 import { DeviconSetting } from "./types";
 import { clearStyles } from "./utils/createStyle";
 
-migratePluginSetting("ShikiCodeblocks", "tryHljs", "tryDiscordHighlighter");
 export default definePlugin({
     name: "ShikiCodeblocks",
     description: "Brings vscode-style codeblocks into Discord, powered by Shiki",
@@ -42,10 +40,10 @@ export default definePlugin({
 
     patches: [
         {
-            find: "codeBlock:{react:(",
+            find: "codeBlock:{react(",
             replacement: {
-                match: /codeBlock:\{react:\((\i),(\i),(\i)\)=>/,
-                replace: "$&true?$self.renderHighlighter($1,$2,$3):"
+                match: /codeBlock:\{react\((\i),(\i),(\i)\)\{/,
+                replace: "$&return $self.renderHighlighter($1,$2,$3);"
             }
         },
         {

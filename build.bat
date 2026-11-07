@@ -7,7 +7,8 @@ call npm install -g pnpm || (echo Failed to install pnpm & pause & exit /b 1)
 echo [LumenCord] Installing dependencies...
 call pnpm install --frozen-lockfile || (echo Failed to install dependencies & pause & exit /b 1)
 echo [LumenCord] Building...
-call pnpm build || (echo Build failed & pause & exit /b 1)
+call pnpm buildStandalone || (echo Build failed & pause & exit /b 1)
 echo.
-echo [LumenCord] Done! Now run install.bat to add LumenCord to Discord.
+echo [LumenCord] Done! The built files are in dist\desktop.
+echo The installer is built separately by GitHub Actions after you push.
 pause

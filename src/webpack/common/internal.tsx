@@ -29,14 +29,18 @@ export function waitForComponent<T extends ComponentType<any> = ComponentType<an
     let myValue: T | null = null;
 
     const lazyComponent = LazyComponent(() => {
-        if (myValue) return myValue;
+        try {
+            if (myValue) return myValue;
+        } catch (e) {
+            logger.error(`Error loading component ${name}:`, e);
+        }
 
         const error = new Error(`Vencord could not find the ${name} Component`);
         logger.error(error);
 
         if (IS_DEV) throw error;
 
-        return fallbackValue!;
+        return fallbackValue || (() => null);
     }) as LazyComponentWrapper<T>;
 
     waitFor(filter, (v: any) => {

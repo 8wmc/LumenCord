@@ -1,88 +1,73 @@
 /*
- * Vencord, a modification for Discord's desktop app
- * Copyright (c) 2022 Vendicated and contributors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
-
-import gitHash from "~git-hash";
+ * Vencord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 
 import { Logger } from "./Logger";
-import { relaunch } from "./native";
 import { IpcRes } from "./types";
 
-export const UpdateLogger = /* #__PURE__*/ new Logger("Updater", "white");
+export const UpdateLogger = /* #__PURE__ */ new Logger("Updater", "white");
 export let isOutdated = false;
-export let isNewer = false;
+export const isNewer = false;
 export let updateError: any;
-export let changes: Record<"hash" | "author" | "message", string>[];
+export let changes: Record<"hash" | "author" | "message", string>[] = [];
 
-async function Unwrap<T>(p: Promise<IpcRes<T>>) {
+async function Unwrap<T>(p: Promise<IpcRes<T>>): Promise<T> {
     const res = await p;
-
-    if (res.ok) return res.value;
-
+    if (res.ok) return res.value as T;
     updateError = res.error;
     throw res.error;
 }
 
-export async function checkForUpdates() {
+/**
+ * Demande au main process s'il y a une version plus récente.
+ * Met à jour isOutdated et changes.
+ */
+export async function checkForUpdates(): Promise<boolean> {
     changes = await Unwrap(VencordNative.updater.getUpdates());
-
-    // we only want to check this for the git updater, not the http updater
-    if (!IS_STANDALONE) {
-        if (changes.some(c => c.hash === gitHash)) {
-            isNewer = true;
-            return (isOutdated = false);
-        }
-    }
-
     return (isOutdated = changes.length > 0);
 }
 
-export async function update() {
+/**
+ * Télécharge le Setup.exe (étape 1).
+ * Retourne true si le téléchargement a réussi.
+ */
+export async function update(): Promise<boolean> {
     if (!isOutdated) return true;
-
-    const res = await Unwrap(VencordNative.updater.update());
-
-    if (res) {
-        isOutdated = false;
-        if (!await Unwrap(VencordNative.updater.rebuild()))
-            throw new Error("The Build failed. Please try manually building the new update");
-    }
-
-    return res;
+    const ok = await Unwrap(VencordNative.updater.update());
+    if (ok) isOutdated = false;
+    return ok;
 }
+
+/**
+ * Lance l'installeur téléchargé (étape 2).
+ * L'app va se fermer et se relancer automatiquement après installation.
+ */
+export async function rebuild(): Promise<boolean> {
+    return Unwrap(VencordNative.updater.rebuild());
+}
+
+import { Settings } from "@api/Settings";
 
 export const getRepo = () => Unwrap(VencordNative.updater.getRepo());
 
+/**
+ * Vérifie les mises à jour au démarrage et propose à l'utilisateur de mettre à jour.
+ */
 export async function maybePromptToUpdate(confirmMessage: string, checkForDev = false) {
-    if (IS_WEB || IS_UPDATER_DISABLED) return;
+    if (IS_WEB || IS_UPDATER_DISABLED || Settings.disableAutoUpdate) return;
     if (checkForDev && IS_DEV) return;
 
     try {
-        const isOutdated = await checkForUpdates();
-        if (isOutdated) {
-            const wantsUpdate = confirm(confirmMessage);
-            if (wantsUpdate && isNewer) return alert("Your local copy has more recent commits. Please stash or reset them.");
-            if (wantsUpdate) {
-                await update();
-                relaunch();
-            }
+        const outdated = await checkForUpdates();
+        if (outdated) {
+            // Mise à jour automatique sans confirmation
+            const downloaded = await update();
+            if (downloaded) await rebuild();
         }
     } catch (err) {
         UpdateLogger.error(err);
-        alert("That also failed :( Try updating or re-installing with the installer!");
+        alert("La vérification des mises à jour a échoué. Vérifie ta connexion ou réinstalle Nightcord.");
     }
 }

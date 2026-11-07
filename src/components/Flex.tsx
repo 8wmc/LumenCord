@@ -18,22 +18,58 @@
 
 import type { CSSProperties, HTMLAttributes } from "react";
 
-export interface FlexProps extends HTMLAttributes<HTMLDivElement> {
-    flexDirection?: CSSProperties["flexDirection"];
-    gap?: CSSProperties["gap"];
-    justifyContent?: CSSProperties["justifyContent"];
-    alignItems?: CSSProperties["alignItems"];
-    flexWrap?: CSSProperties["flexWrap"];
+export enum FlexDirection {
+    HORIZONTAL = "row",
+    HORIZONTAL_REVERSE = "row-reverse",
+    VERTICAL = "column",
+    VERTICAL_REVERSE = "column-reverse",
 }
 
-export function Flex({ flexDirection, gap = "1em", justifyContent, alignItems, flexWrap, children, style, ...restProps }: FlexProps) {
+export enum FlexAlign {
+    START = "flex-start",
+    END = "flex-end",
+    CENTER = "center",
+    STRETCH = "stretch",
+    BASELINE = "baseline",
+}
+
+export enum FlexJustify {
+    START = "flex-start",
+    END = "flex-end",
+    CENTER = "center",
+    BETWEEN = "space-between",
+    AROUND = "space-around",
+    EVENLY = "space-evenly",
+}
+
+export enum FlexWrap {
+    NO_WRAP = "nowrap",
+    WRAP = "wrap",
+    WRAP_REVERSE = "wrap-reverse",
+}
+
+export interface FlexProps extends HTMLAttributes<HTMLDivElement> {
+    direction?: CSSProperties["flexDirection"];
+    flexDirection?: CSSProperties["flexDirection"];
+    gap?: CSSProperties["gap"];
+    alignContent?: CSSProperties["alignContent"];
+    justifyContent?: CSSProperties["justifyContent"];
+    justify?: CSSProperties["justifyContent"];
+    alignItems?: CSSProperties["alignItems"];
+    align?: CSSProperties["alignItems"];
+    flexWrap?: CSSProperties["flexWrap"];
+    wrap?: CSSProperties["flexWrap"];
+}
+
+export function Flex({ direction, flexDirection, gap = "1em", alignContent, justify, justifyContent, align, alignItems, wrap, flexWrap, children, style, ...restProps }: FlexProps) {
     style = {
         display: "flex",
-        flexDirection,
+        flexDirection: direction ?? flexDirection,
         gap,
-        justifyContent,
-        alignItems,
-        flexWrap,
+        alignContent,
+        justifyContent: justify ?? justifyContent,
+        alignItems: align ?? alignItems,
+        flexWrap: wrap ?? flexWrap,
         ...style
     };
 
@@ -43,3 +79,8 @@ export function Flex({ flexDirection, gap = "1em", justifyContent, alignItems, f
         </div>
     );
 }
+
+Flex.Direction = FlexDirection;
+Flex.Align = FlexAlign;
+Flex.Justify = FlexJustify;
+Flex.Wrap = FlexWrap;

@@ -9,13 +9,6 @@ export interface ThemeState {
     /** 0 = not loaded, 1 = loaded */
     status: 0 | 1;
     preferences: Record<ThemePreference, Theme>;
-    syncedClientThemes: Partial<Record<SystemTheme, SyncedClientTheme>>;
-    syncedThemesEnabled: boolean;
-}
-
-export interface SyncedClientTheme {
-    backgroundGradientPresetId?: number;
-    [key: string]: unknown;
 }
 export class ThemeStore extends FluxStore {
     get systemTheme(): SystemTheme;
@@ -23,6 +16,4 @@ export class ThemeStore extends FluxStore {
 
     getState(): ThemeState;
     themePreferenceForSystemTheme(preference: ThemePreference): Theme;
-    getSyncedClientTheme(systemTheme: SystemTheme): SyncedClientTheme | undefined;
-    isSameAsDeviceThemeEnabled(): boolean;
 }

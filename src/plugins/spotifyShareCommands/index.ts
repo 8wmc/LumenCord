@@ -20,17 +20,50 @@ import { ApplicationCommandInputType, findOption, OptionalMessageOption, sendBot
 import { Devs } from "@utils/constants";
 import { sendMessage } from "@utils/discord";
 import definePlugin from "@utils/types";
-import { Command, SpotifyTrack } from "@vencord/discord-types";
-import { FluxDispatcher, MessageActions, PendingReplyStore, SpotifyStore } from "@webpack/common";
+import { Command } from "@vencord/discord-types";
+import { findByPropsLazy } from "@webpack";
+import { FluxDispatcher, MessageActions, PendingReplyStore } from "@webpack/common";
 
-function makeCommand(name: string, formatUrl: (track: SpotifyTrack) => string): Command {
+interface Album {
+    id: string;
+    image: {
+        height: number;
+        width: number;
+        url: string;
+    };
+    name: string;
+}
+
+interface Artist {
+    external_urls: {
+        spotify: string;
+    };
+    href: string;
+    id: string;
+    name: string;
+    type: "artist" | string;
+    uri: string;
+}
+
+interface Track {
+    id: string | null;
+    album: Album;
+    artists: Artist[];
+    duration: number;
+    isLocal: boolean;
+    name: string;
+}
+
+const Spotify = findByPropsLazy("getPlayerState");
+
+function makeCommand(name: string, formatUrl: (track: Track) => string): Command {
     return {
         name,
         description: `Share your current Spotify ${name} in chat`,
         inputType: ApplicationCommandInputType.BUILT_IN,
         options: [OptionalMessageOption],
         execute(options, { channel }) {
-            const track = SpotifyStore.getTrack();
+            const track: Track | null = Spotify.getTrack();
             if (!track) {
                 return sendBotMessage(channel.id, {
                     content: "You're not listening to any music."
@@ -65,6 +98,7 @@ function makeCommand(name: string, formatUrl: (track: SpotifyTrack) => string): 
 export default definePlugin({
     name: "SpotifyShareCommands",
     description: "Share your current Spotify track, album or artist via slash command (/track, /album, /artist)",
+    dependencies: ["CommandsAPI"],
     tags: ["Media", "Commands"],
     authors: [Devs.katlyn],
     commands: [

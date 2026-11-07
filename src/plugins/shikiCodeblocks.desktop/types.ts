@@ -51,7 +51,7 @@ export const enum StyleSheets {
     DevIcons = "DEVICONS",
 }
 
-export const enum HighlighterSetting {
+export const enum HljsSetting {
     Never = "NEVER",
     Secondary = "SECONDARY",
     Primary = "PRIMARY",

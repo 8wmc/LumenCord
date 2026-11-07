@@ -21,14 +21,104 @@
     box-shadow: var(--elevation-high);
 }
 
-.vc-addon-header {
-    margin-top: auto;
+.vc-addon-top-row {
     display: flex;
-    width: 100%;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
+}
+
+.vc-addon-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.vc-addon-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.vc-addon-icon svg {
+    width: 18px !important;
+    height: 18px !important;
+    max-width: 18px;
+    max-height: 18px;
+}
+
+.vc-addon-bottom-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+}
+
+.vc-addon-actions {
+    display: flex;
     gap: 8px;
-    margin-bottom: 0.5em;
+    align-items: center;
+}
+
+.vc-addon-source {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.vc-addon-source button {
+    -webkit-appearance: none;
+    appearance: none;
+    outline: none;
+    box-shadow: none !important;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.vc-addon-source button:focus,
+.vc-addon-source button:focus-visible,
+.vc-addon-source button:active {
+    outline: none !important;
+    box-shadow: none !important;
+    background: none !important;
+}
+
+.nc-badge-btn {
+    background: none;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    cursor: pointer;
+    padding: 2px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    border-radius: 4px;
+    color: var(--interactive-normal);
+    transition: color 0.15s ease;
+}
+
+.nc-badge-btn:hover {
+    color: var(--interactive-hover);
+}
+
+.nc-badge-btn.nc-badge-btn-disabled {
+    cursor: not-allowed;
+}
+
+.nc-badge-btn.nc-badge-btn-disabled:hover {
+    color: var(--interactive-normal);
+}
+
+.nc-badge-btn.nc-badge-liked {
+    color: #ffffff;
+}
+
+.nc-badge-btn.nc-badge-liked:hover {
+    color: #ffffff;
 }
 
 .vc-addon-note {
@@ -39,8 +129,8 @@
     -webkit-line-clamp: 2;
     line-clamp: 2;
     -webkit-box-orient: vertical;
-    /* stylelint-disable-next-line property-no-unknown */
     box-orient: vertical;
+    color: var(--text-default);
 }
 
 .vc-addon-name-author {
@@ -52,7 +142,6 @@
     width: 100%;
     align-items: center;
     flex-grow: 1;
-    gap: 8px;
 }
 
 .vc-addon-author {
@@ -94,4 +183,15 @@
 .vc-addon-title:hover {
     overflow: visible;
     animation: vc-addon-title var(--duration) linear infinite;
+}
+
+.vc-addon-editable {
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+}
+
+.vc-addon-footer {
+    font-size: small;
 }

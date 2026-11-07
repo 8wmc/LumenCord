@@ -18,27 +18,23 @@
 
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Logger } from "@utils/Logger";
-import { IconComponent, IconProps } from "@utils/types";
-import { Message } from "@vencord/discord-types";
-import type { ComponentType, HTMLProps, ReactElement } from "react";
+import { IconComponent } from "@utils/types";
+import { Channel, Message } from "@vencord/discord-types";
+import type { ComponentType, MouseEventHandler } from "react";
 
 import { useSettings } from "./Settings";
+import { isStealthModeEnabled } from "./stealthState";
 
 const logger = new Logger("MessagePopover");
 
-export interface MessagePopoverButtonItem extends HTMLProps<HTMLDivElement> {
+export interface MessagePopoverButtonItem {
     key?: string,
     label: string,
     icon: ComponentType<any>,
-    ariaLabel?: string,
-    buttonClassName?: string
-    dangerous?: boolean,
-    disabled?: boolean,
-    iconProps?: IconProps,
-    onTooltipShow?: () => void,
-    onTooltipHide?: () => void,
-    separator?: boolean,
-    tooltipText?: ReactElement,
+    message: Message,
+    channel: Channel,
+    onClick?: MouseEventHandler<HTMLButtonElement>,
+    onContextMenu?: MouseEventHandler<HTMLButtonElement>;
 }
 
 export type MessagePopoverButtonFactory = (message: Message) => MessagePopoverButtonItem | null;
@@ -73,6 +69,9 @@ function VencordPopoverButtons(props: { Component: React.ComponentType<MessagePo
     const { Component, message } = props;
 
     const { messagePopoverButtons } = useSettings(["uiElements.messagePopoverButtons.*"]).uiElements;
+
+    // ── Stealth Mode Bypass ──
+    if (isStealthModeEnabled()) return null;
 
     const elements = Array.from(MessagePopoverButtonMap.entries())
         .filter(([key]) => messagePopoverButtons[key]?.enabled !== false)

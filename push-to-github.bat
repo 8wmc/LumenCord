@@ -5,6 +5,8 @@ where git >nul 2>nul || (echo Git is not installed. Get it from https://git-scm.
 if not exist .git (
     git init -b main
     git remote add origin https://github.com/8wmc/LumenCord.git
+    rem Stack this version on top of what is already on GitHub instead of clashing with it.
+    git fetch origin main 2>nul && git reset --soft origin/main
 )
 git add -A
 git commit -m "LumenCord update" || echo Nothing new to commit.

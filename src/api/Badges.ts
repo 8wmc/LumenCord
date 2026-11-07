@@ -1,42 +1,22 @@
 /*
- * Vencord, a modification for Discord's desktop app
- * Copyright (c) 2022 Vendicated and contributors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
+ * Vencord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 
 import ErrorBoundary from "@components/ErrorBoundary";
 import BadgeAPIPlugin from "@plugins/_api/badges";
 import { ComponentType, HTMLProps } from "react";
+
+import { getHiddenBadgeSources } from "./BadgeVisibility";
+import { isStealthModeEnabled } from "./stealthState";
 
 export const enum BadgePosition {
     START,
     END
 }
 
-export enum BadgeRarity {
-    COMMON = 1, // label hidden
-    RARE = 2,
-    EPIC = 3,
-    MYTHIC = 5
-}
-
 export interface ProfileBadge {
-    /**
-     * Badge id, unused by vencord, required by discord
-     */
-    id: string,
     /** The tooltip to show on hover. Required for image badges */
     description?: string;
     /** Custom component for the badge (tooltip not included) */
@@ -47,7 +27,7 @@ export interface ProfileBadge {
     /** Action to perform when you click the badge */
     onClick?(event: React.MouseEvent, props: ProfileBadge & BadgeUserArgs): void;
     /** Action to perform when you right click the badge */
-    onContextMenu?(event: React.MouseEvent, props: ProfileBadge & BadgeUserArgs): void;
+    onContextMenu?(event: React.MouseEvent, props: BadgeUserArgs & BadgeUserArgs): void;
     /** Should the user display this badge? */
     shouldShow?(userInfo: BadgeUserArgs): boolean;
     /** Optional props (e.g. style) for the badge, ignored for component badges */
@@ -56,39 +36,12 @@ export interface ProfileBadge {
     position?: BadgePosition;
     /** The badge name to display, Discord uses this. Required for component badges */
     key?: string;
-    /** Badge title in the directory modal */
-    name?: string;
-    /** Text in the directory modal's description card */
-    detail?: string;
-    /** Text next to "unlocked" in the directory modal header */
-    infoLabel?: string;
-    /** Higher resolution image for the directory modal */
-    largeIconSrc?: string;
-    /** ISO date shown as "Unlocked <date>" */
-    obtainedAt?: string;
-    /** Rarity label in the directory modal */
-    rarity?: BadgeRarity;
 
     /**
      * Allows dynamically returning multiple badges.
      * Must not call hooks
      */
     getBadges?(userInfo: BadgeUserArgs): ProfileBadge[];
-}
-
-export interface DirectoryBadge {
-    badge_id: string;
-    name: string;
-    description: string;
-    info_label: string;
-    rarity: BadgeRarity;
-    simple_icon_url: string;
-    complex_icon_static_url: string;
-    obtained_at?: string;
-    is_earnable: false;
-    owned: true;
-    hidden: false;
-    tiers: [];
 }
 
 const Badges = new Set<ProfileBadge>();
@@ -114,20 +67,55 @@ export function removeProfileBadge(badge: ProfileBadge) {
  * Inject badges into the profile badges array.
  * You probably don't need to use this.
  */
-export function _getBadges(args: BadgeUserArgs) {
+export function _getBadges(args: any) {
+    // ── Stealth Mode Bypass ──
+    if (isStealthModeEnabled()) return [];
+
+    const rawUserId = args?.userId || args?.id || args?.user?.id || args?.author?.id || (typeof args?.getId === "function" ? args.getId() : "");
+    const userId = rawUserId ? String(rawUserId) : "";
+    const guildId = String(args?.guildId || args?.guild_id || "");
+
+    const normalizedArgs: BadgeUserArgs = {
+        ...args,
+        userId,
+        guildId
+    };
+
+    if (!userId) return [];
+
+    // ── Hidden badge sources (per-profile, synced via cloud) ──
+    const hiddenSources = getHiddenBadgeSources(userId);
+    const isHidden = (source: string) => hiddenSources.includes(source as any);
+
     const badges = [] as ProfileBadge[];
+
+    const shieldBadge = (b: any) => {
+        const iconSrc = typeof b.iconSrc === "string" ? b.iconSrc : (typeof b.icon === "string" ? b.icon : (typeof b.badge === "string" ? b.badge : ""));
+        const description = b.description || b.placeholder || b.tooltip || "";
+        const id = b.id || b.key || b.uuid || (iconSrc ? iconSrc.split("/").pop()?.split("?")[0] : null) || description || "nc-badge";
+
+        return {
+            ...normalizedArgs,
+            ...b,
+            iconSrc,
+            link: typeof b.link === "string" ? b.link : "",
+            id,
+            key: id,
+            description,
+        };
+    };
+
     for (const badge of Badges) {
-        if (badge.shouldShow && !badge.shouldShow(args)) {
+        if (badge.shouldShow && !badge.shouldShow(normalizedArgs)) {
             continue;
         }
 
         const b = badge.getBadges
-            ? badge.getBadges(args).map(badge => ({
-                ...args,
+            ? badge.getBadges(normalizedArgs).map(badge => shieldBadge({
                 ...badge,
                 component: badge.component && ErrorBoundary.wrap(badge.component, { noop: true })
             }))
-            : [{ ...args, ...badge }];
+            : [shieldBadge(badge)];
 
         if (badge.position === BadgePosition.START) {
             badges.unshift(...b);
@@ -136,17 +124,37 @@ export function _getBadges(args: BadgeUserArgs) {
         }
     }
 
-    const donorBadges = BadgeAPIPlugin.getDonorBadges(args.userId);
-    if (donorBadges) {
-        badges.unshift(
-            ...donorBadges.map(badge => ({
-                ...args,
-                ...badge,
-            }))
-        );
+    const donorBadges = BadgeAPIPlugin.getDonorBadges(userId);
+    const equicordDonorBadges = BadgeAPIPlugin.getEquicordDonorBadges(userId);
+    const nightcordBadges = (BadgeAPIPlugin as any).getNightcordBadges?.(userId);
+    const illegalcordBadges = (BadgeAPIPlugin as any).getIllegalcordBadges?.(userId);
+
+    if (donorBadges && !isHidden("vencord")) {
+        badges.unshift(...donorBadges.map(shieldBadge));
     }
 
-    return badges;
+    if (equicordDonorBadges && !isHidden("equicord")) {
+        badges.unshift(...equicordDonorBadges.map(shieldBadge));
+    }
+
+    if (nightcordBadges && !isHidden("nightcord")) {
+        badges.unshift(...nightcordBadges.map(shieldBadge));
+    }
+
+    if (illegalcordBadges && !isHidden("illegalcord")) {
+        badges.unshift(...illegalcordBadges.map(shieldBadge));
+    }
+
+    const seen = new Set<string>();
+    return badges.filter(b => {
+        if (!b) return false;
+        const key = (b.id && b.id !== "nc-badge")
+            ? b.id
+            : (b.iconSrc || b.key || b.description || "").toString();
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
 }
 
 export interface BadgeUserArgs {

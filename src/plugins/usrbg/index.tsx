@@ -16,11 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+import "./styles.css";
+
 import { definePluginSettings } from "@api/Settings";
-import { LinkButton } from "@components/Button";
+import { Button } from "@components/Button";
 import { Devs } from "@utils/constants";
+import { classNameFactory } from "@utils/css";
 import definePlugin, { OptionType } from "@utils/types";
 
+const cl = classNameFactory("vc-usrbg-");
 const API_URL = "https://usrbg.is-hardly.online/users";
 
 interface UsrbgApiReturn {
@@ -64,17 +68,15 @@ export default definePlugin({
         },
         {
             find: "\"data-selenium-video-tile\":",
-            predicate: () => settings.store.voiceBackground,
             replacement: [
                 {
-                    // FIXME: Stable compat: (?: \i)?
-                    match: /(?<=function(?: \i)?\((\i)\)\{)(?=let.{20,40},style:)/,
-                    replace: "$1.style=$self.getVoiceBackgroundStyles($1);"
+                    match: /(?<=function\((\i),\i\)\{)(?=let.{20,40},style:)/,
+                    replace: "Object.assign($1.style=$1.style||{},$self.getVoiceBackgroundStyles($1));"
                 }
             ]
         },
         {
-            find: ".VIDEO_TILE_BACKGROUND,primaryColor:",
+            find: '"VideoBackground-web"',
             predicate: () => settings.store.voiceBackground,
             replacement: {
                 match: /backgroundColor:.{0,25},\{style:(?=\i\?)/,
@@ -85,13 +87,15 @@ export default definePlugin({
 
     data: null as UsrbgApiReturn | null,
 
-    settingsAboutComponent: () => {
-        return (
-            <LinkButton href="https://github.com/AutumnVN/usrbg#how-to-request-your-own-usrbg-banner" variant="primary">
-                Get your own USRBG banner
-            </LinkButton>
-        );
-    },
+    settingsAboutComponent: () => (
+        <Button
+            variant="link"
+            className={cl("settings-button")}
+            onClick={() => VencordNative.native.openExternal("https://github.com/AutumnVN/usrbg#how-to-request-your-own-usrbg-banner")}
+        >
+            Get your own USRBG banner
+        </Button>
+    ),
 
     getVoiceBackgroundStyles({ className, participantUserId }: any) {
         if (className.includes("tile")) {

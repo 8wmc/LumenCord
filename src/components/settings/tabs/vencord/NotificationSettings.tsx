@@ -6,19 +6,22 @@
 
 import { openNotificationLogModal } from "@api/Notifications/notificationLog";
 import { useSettings } from "@api/Settings";
+import { BaseText } from "@components/BaseText";
 import { Button } from "@components/Button";
 import { ErrorCard } from "@components/ErrorCard";
 import { Flex } from "@components/Flex";
+import { FormSwitch } from "@components/FormSwitch";
 import { Heading } from "@components/Heading";
 import { Paragraph } from "@components/Paragraph";
 import { Margins } from "@utils/margins";
 import { identity } from "@utils/misc";
-import { Modal, openModal, Select, Slider } from "@webpack/common";
+import { ModalCloseButton, ModalContent, ModalHeader, ModalRoot, ModalSize, openModal } from "@utils/modal";
+import { Select, Slider } from "@webpack/common";
 
 export function NotificationSection() {
     return (
         <section className={Margins.top16}>
-            <Heading className={Margins.bottom8}>Notifications</Heading>
+            <Heading>Notifications</Heading>
             <Paragraph className={Margins.bottom8}>
                 Settings for Notifications sent by Vencord.
                 This does NOT include Discord notifications (messages, etc)
@@ -37,13 +40,16 @@ export function NotificationSection() {
 
 export function openNotificationSettingsModal() {
     openModal(props => (
-        <Modal
-            {...props}
-            size="lg"
-            title="Notification Settings"
-        >
-            <NotificationSettings />
-        </Modal>
+        <ModalRoot {...props} size={ModalSize.MEDIUM}>
+            <ModalHeader>
+                <BaseText size="lg" weight="semibold" style={{ flexGrow: 1 }}>Notification Settings</BaseText>
+                <ModalCloseButton onClick={props.onClose} />
+            </ModalHeader>
+
+            <ModalContent>
+                <NotificationSettings />
+            </ModalContent>
+        </ModalRoot>
     ));
 }
 
@@ -51,18 +57,18 @@ function NotificationSettings() {
     const settings = useSettings(["notifications.*"]).notifications;
 
     return (
-        <>
-            <Heading className={Margins.bottom8}>Notification Style</Heading>
-            {settings.useNative !== "never" && Notification?.permission === "denied" && (
+        <div style={{ padding: "1em 0" }}>
+            <Heading>Notification Style</Heading>
+            {settings.useNative !== "never" && typeof Notification !== "undefined" && Notification?.permission === "denied" && (
                 <ErrorCard style={{ padding: "1em" }} className={Margins.bottom8}>
-                    <Heading className={Margins.bottom8}>Desktop Notification Permission denied</Heading>
+                    <Heading>Desktop Notification Permission denied</Heading>
                     <Paragraph>You have denied Notification Permissions. Thus, Desktop notifications will not work!</Paragraph>
                 </ErrorCard>
             )}
             <Paragraph className={Margins.bottom8}>
                 Some plugins may show you notifications. These come in two styles:
                 <ul>
-                    <li><strong>Vencord Notifications</strong>: These are in-app notifications</li>
+                    <li><strong>Equicord Notifications</strong>: These are in-app notifications</li>
                     <li><strong>Desktop Notifications</strong>: Native Desktop notifications (like when you get a ping)</li>
                 </ul>
             </Paragraph>
@@ -71,7 +77,7 @@ function NotificationSettings() {
                 options={[
                     { label: "Only use Desktop notifications when Discord is not focused", value: "not-focused", default: true },
                     { label: "Always use Desktop notifications", value: "always" },
-                    { label: "Always use Vencord notifications", value: "never" },
+                    { label: "Always use Equicord notifications", value: "never" },
                 ] satisfies Array<{ value: typeof settings["useNative"]; } & Record<string, any>>}
                 closeOnSelect={true}
                 select={v => settings.useNative = v}
@@ -90,6 +96,13 @@ function NotificationSettings() {
                 select={v => settings.position = v}
                 isSelected={v => v === settings.position}
                 serialize={identity}
+            />
+
+            <Heading className={Margins.top16 + " " + Margins.bottom8}>Missed Notification Count</Heading>
+            <FormSwitch
+                title="When refocusing discord a notification will popup with how you missed"
+                value={settings.missed}
+                onChange={(v: boolean) => settings.missed = v}
             />
 
             <Heading className={Margins.top16 + " " + Margins.bottom8}>Notification Timeout</Heading>
@@ -121,6 +134,6 @@ function NotificationSettings() {
                 onValueRender={v => v === 200 ? "∞" : v}
                 onMarkerRender={v => v === 200 ? "∞" : v}
             />
-        </>
+        </div>
     );
 }

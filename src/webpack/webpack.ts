@@ -1,20 +1,8 @@
 /*
- * Vencord, a modification for Discord's desktop app
- * Copyright (c) 2022 Vendicated and contributors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
+ * Nightcord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 
 import { traceFunction } from "@debug/Tracer";
 import { makeLazy, proxyLazy } from "@utils/lazy";
@@ -103,13 +91,7 @@ export const filters = {
         return (m: any) => {
             if (typeof m !== "object") return false;
 
-            // Some exports might have not been initialized yet due to circular imports, so try catch it.
-            try {
-                var values = Object.values(m);
-            } catch {
-                return false;
-            }
-
+            const values = Object.values(m);
             return regexes.every(cls => values.some(v => typeof v === "string" && cls.test(v)));
         };
     }
@@ -239,7 +221,7 @@ export const find = traceFunction("find", function find(filter: FilterFn, { isIn
 
     for (const key in cache) {
         const mod = cache[key];
-        if (mod == null || mod.exports == null) continue;
+        if (mod?.loaded === false || mod?.exports == null) continue;
 
         if (filter(mod.exports)) {
             return isWaitFor ? [mod.exports, key] : mod.exports;
@@ -248,16 +230,18 @@ export const find = traceFunction("find", function find(filter: FilterFn, { isIn
         if (typeof mod.exports !== "object" || topLevelOnly) continue;
 
         for (const nestedMod in mod.exports) {
-            // Some exports might have not been initialized yet due to circular imports, so try catch it.
             try {
-                var nested = mod.exports[nestedMod];
-            } catch {
-                continue;
-            }
-
-            if (nested && filter(nested)) {
-                return isWaitFor ? [nested, key] : nested;
-            }
+                const nested = mod.exports[nestedMod];
+                if (nested) {
+                    if (nested[Symbol.toStringTag] === "IntlMessagesProxy") {
+                        makePropertyNonEnumerable(mod.exports, nestedMod);
+                        continue;
+                    }
+                    if (filter(nested)) {
+                    return isWaitFor ? [nested, key] : nested;
+                    }
+                }
+            } catch { }
         }
     }
 
@@ -275,7 +259,7 @@ export function findAll(filter: FilterFn, { topLevelOnly = false }: { topLevelOn
     const ret = [] as any[];
     for (const key in cache) {
         const mod = cache[key];
-        if (mod == null || mod.exports == null) continue;
+        if (mod?.loaded === false || mod?.exports == null) continue;
 
         if (filter(mod.exports))
             ret.push(mod.exports);
@@ -284,14 +268,10 @@ export function findAll(filter: FilterFn, { topLevelOnly = false }: { topLevelOn
             continue;
 
         for (const nestedMod in mod.exports) {
-            // Some exports might have not been initialized yet due to circular imports, so try catch it.
             try {
-                var nested = mod.exports[nestedMod];
-            } catch {
-                continue;
-            }
-
-            if (nested && filter(nested)) ret.push(nested);
+                const nested = mod.exports[nestedMod];
+                if (nested && nested[Symbol.toStringTag] !== "IntlMessagesProxy" && filter(nested)) ret.push(nested);
+            } catch { }
         }
     }
 
@@ -330,7 +310,7 @@ export const findBulk = traceFunction("findBulk", function findBulk(...filterFns
     outer:
     for (const key in cache) {
         const mod = cache[key];
-        if (mod == null || mod.exports == null) continue;
+        if (mod?.loaded === false || mod?.exports == null) continue;
 
         for (let j = 0; j < length; j++) {
             const filter = filters[j];
@@ -348,14 +328,8 @@ export const findBulk = traceFunction("findBulk", function findBulk(...filterFns
                 continue;
 
             for (const nestedMod in mod.exports) {
-                // Some exports might have not been initialized yet due to circular imports, so try catch it.
-                try {
-                    var nested = mod.exports[nestedMod];
-                } catch {
-                    continue;
-                }
-
-                if (nested && filter(nested)) {
+                const nested = mod.exports[nestedMod];
+                if (nested && nested[Symbol.toStringTag] !== "IntlMessagesProxy" && filter(nested)) {
                     results[j] = nested;
                     filters[j] = undefined;
                     if (++found === length) break outer;
@@ -565,7 +539,6 @@ export function findComponentByCode(...code: CodeFilter) {
 export function findComponentLazy<T extends object = any>(filter: FilterFn) {
     if (IS_REPORTER) lazyWebpackSearchHistory.push(["findComponent", [filter]]);
 
-
     return LazyComponent<T>(() => {
         const res = find(filter, { isIndirect: true });
         if (!res)
@@ -700,12 +673,8 @@ export function mapMangledModuleLazy<S extends string>(code: string | RegExp | C
     return proxyLazy(() => mapMangledModule(code, mappers, includeBlacklistedExports));
 }
 
-export const DefaultExtractAndLoadChunksRegex = /(?:(?:Promise\.all\(\[)?((?:\i\.e\("?[^)]+?"?\),?)+?)(?:\]\))?|Promise\.resolve\(\))\.then\(\i\.bind\(\i,"?([^)]+?)"?(?:,[^)]+?)?\)\)/;
-const ChunkIdsRegex = /\((?:"([^"]+?)"|([\de]+?))\)/g;
-
-export function parseChunkIds(rawChunkIds: string): Array<string | number> {
-    return Array.from(rawChunkIds.matchAll(ChunkIdsRegex), m => m[1] ?? Number(m[2]));
-}
+export const DefaultExtractAndLoadChunksRegex = /(?:(?:Promise\.all\(\[)?((?:\i\.e\("?[^)]+?"?\),?)+?)(?:\]\))?|Promise\.resolve\(\))\.then\(\i\.bind\(\i,"?([^)]+?)"?\)\)/;
+export const ChunkIdsRegex = /\("([^"]+?)"\)/g;
 
 /**
  * Extract and load chunks using their entry point
@@ -757,7 +726,10 @@ export async function extractAndLoadChunks(code: CodeFilter, matcher = DefaultEx
     const entryPoint = Number.isNaN(numEntryPoint) ? entryPointId : String(numEntryPoint);
 
     if (rawChunkIds) {
-        const chunkIds = parseChunkIds(rawChunkIds);
+        const chunkIds = Array.from(rawChunkIds.matchAll(ChunkIdsRegex)).map(m => {
+            const numChunkId = Number(m[1]);
+            return Number.isNaN(numChunkId) ? m[1] : String(numChunkId);
+        });
 
         await Promise.all(chunkIds.map(id => wreq.e(id)));
     }

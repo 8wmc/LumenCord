@@ -16,5 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-if (!IS_UPDATER_DISABLED)
-    require(IS_STANDALONE ? "./http" : "./git");
+import { IpcEvents } from "@shared/IpcEvents";
+import { ipcMain } from "electron";
+
+import gitRemote from "~git-remote";
+
+import { serializeErrors } from "./common";
+
+if (!IS_UPDATER_DISABLED) {
+    // Nightcord utilise toujours le mode HTTP (GitHub Releases)
+    // IS_STANDALONE is false when injected into Discord, but we still want http.ts
+    require("./http");
+} else {
+    ipcMain.handle(IpcEvents.GET_REPO, serializeErrors(() => `https://github.com/${gitRemote}`));
+    ipcMain.handle(IpcEvents.GET_UPDATES, serializeErrors(() => []));
+}

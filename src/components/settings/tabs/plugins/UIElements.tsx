@@ -9,18 +9,17 @@ import "./UIElements.css";
 import { ChatBarButtonMap } from "@api/ChatButtons";
 import { MessagePopoverButtonMap } from "@api/MessagePopover";
 import { SettingsPluginUiElements, useSettings } from "@api/Settings";
+import { BaseText } from "@components/BaseText";
 import { Card } from "@components/Card";
-import { Heading } from "@components/Heading";
 import { PlaceholderIcon } from "@components/Icons";
 import { Paragraph } from "@components/Paragraph";
 import { Switch } from "@components/Switch";
 import { classNameFactory } from "@utils/css";
 import { Margins } from "@utils/margins";
 import { classes } from "@utils/misc";
+import { ModalContent, ModalProps, ModalRoot, ModalSize, openModal } from "@utils/modal";
 import { IconComponent } from "@utils/types";
-import { RenderModalProps } from "@vencord/discord-types";
-import { Clickable, Modal, openModal } from "@webpack/common";
-
+import { Clickable } from "@webpack/common";
 
 const cl = classNameFactory("vc-plugin-ui-elements-");
 
@@ -75,8 +74,8 @@ function Section(props: {
 
     return (
         <section>
-            <Heading tag="h3" className={Margins.bottom8}>{title}</Heading>
-            <Paragraph size="sm" className={classes(Margins.top8, Margins.bottom20, cl("description"))}>{description}</Paragraph>
+            <BaseText tag="h3" size="xl" weight="bold">{title}</BaseText>
+            <Paragraph size="sm" className={classes(Margins.top8, Margins.bottom20)}>{description}</Paragraph>
 
             <div className={cl("switches")}>
                 {switches.length === 0 && (
@@ -90,12 +89,12 @@ function Section(props: {
     );
 }
 
-function UIElementsModal(props: RenderModalProps) {
+function UIElementsModal(props: ModalProps) {
     const { uiElements } = useSettings(["uiElements.*"]);
 
     return (
-        <Modal {...props} size="md" title="Manage plugin UI elements">
-            <div className={cl("modal-content")}>
+        <ModalRoot {...props} size={ModalSize.MEDIUM}>
+            <ModalContent className={cl("modal-content")}>
                 <Section
                     title="Chatbar Buttons"
                     description="These are the buttons on the right side of the chat input bar"
@@ -108,7 +107,7 @@ function UIElementsModal(props: RenderModalProps) {
                     buttonMap={MessagePopoverButtonMap}
                     settings={uiElements.messagePopoverButtons}
                 />
-            </div>
-        </Modal>
+            </ModalContent>
+        </ModalRoot>
     );
 }
