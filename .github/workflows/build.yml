@@ -30,11 +30,13 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
-            # Every upload gets a higher version number (2.0.<run number>), so the
+            # Every upload gets a higher version number (2.1.0, 2.1.1, 2.1.2, ...), so the
             # in-app updater can tell there is something new without anyone editing files.
             - name: Set version number
               run: |
-                  jq --arg v "2.0.${{ github.run_number }}" '.version = $v' package.json > package.tmp.json
+                  # v2.1.0 is build 10; every upload after that counts up: 2.1.1, 2.1.2, ...
+                  PATCH=$(( ${{ github.run_number }} - 10 )); if [ $PATCH -lt 0 ]; then PATCH=0; fi
+                  jq --arg v "2.1.$PATCH" '.version = $v' package.json > package.tmp.json
                   mv package.tmp.json package.json
                   echo "Building LumenCord v$(jq -r .version < package.json)"
 
@@ -106,7 +108,9 @@ jobs:
             - name: Set installer version number
               shell: bash
               run: |
-                  jq --arg v "2.0.${{ github.run_number }}" '.version = $v' package.json > package.tmp.json
+                  # v2.1.0 is build 10; every upload after that counts up: 2.1.1, 2.1.2, ...
+                  PATCH=$(( ${{ github.run_number }} - 10 )); if [ $PATCH -lt 0 ]; then PATCH=0; fi
+                  jq --arg v "2.1.$PATCH" '.version = $v' package.json > package.tmp.json
                   mv package.tmp.json package.json
                   echo "Building LumenCord Installer v$(jq -r .version < package.json)"
 

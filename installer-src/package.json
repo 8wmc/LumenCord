@@ -3,7 +3,7 @@
   "productName": "LumenCord Installer",
   "description": "A simple standalone program which automates the installation, removal and maintenance of LumenCord.",
   "author": "8wmc",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "license": "MIT",
   "scripts": {
     "dev": "electron-webpack dev",

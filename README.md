@@ -34,7 +34,7 @@ A few things were changed from upstream Nightcord before this was rebranded:
    run it, accept the licence, pick your Discord, and click Install.
 
 The installer is Windows-only for now. Updates inside the app come only from this repo's GitHub releases.
-Every upload to GitHub gets a new version number automatically (2.0.<build number>), so installed copies
+Every upload to GitHub gets a new version number automatically (2.1.0, then 2.1.1, 2.1.2, ...), so installed copies
 notice the update on their own.
 
 ## LumenCord Games

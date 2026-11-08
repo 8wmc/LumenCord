@@ -14,7 +14,7 @@ Look: deep purple / navy with violet accent. Logo: glowing "L" with a ring on a 
 
 ## Current state (works)
 - GitHub Actions "Release" builds the mod (`lumencord-dist.zip`) and the Windows installer (`LumenCord-Installer.exe`)
-  and uploads both to the "latest" release. Version is set automatically to 2.0.<run number>; the release title holds it.
+  and uploads both to the "latest" release. Version is set automatically to 2.1.0, 2.1.1, 2.1.2...; the release title holds it.
 - Installed and tested by me in Discord: it works.
 - Installer restyled in LumenCord colours with logo; its links go to my GitHub.
 - All on-screen "Nightcord" text rebranded to LumenCord (~1,100 strings plus translations). Plugin author credits and the
@@ -43,8 +43,8 @@ Look: deep purple / navy with violet accent. Logo: glowing "L" with a ring on a 
 - Built-in community theme (plugin `src/nightcordplugins/lumenCordTheme`, LumenCord.theme.css v2.4), on by default,
   switch at the top of Settings → Themes.
 - Installer pages: Welcome (logo) → Licence (keeps the Vencord/Equicord/Nightcord GPL credit) → Credits (owner card,
-  "V2") → Choose action (4 cards) → Pick Discord → Install. Title bar shows the full version (v2.0.<run>).
-- Version scheme is 2.0.<run number> for both the app and the installer (set in build.yml).
+  "V2") → Choose action (4 cards) → Pick Discord → Install. Title bar shows the full version (v2.1.x).
+- Version scheme is 2.1.0, 2.1.1, 2.1.2... for both the app and the installer (set in build.yml).
 - Removed for safety: GhostClient, GhostInstaller (downloaded and ran programs from Nightcord's server),
   MultiInstance and TokenImporter (stored Discord tokens in plain files). Rule: LumenCord never stores tokens.
 - Installer downloads and the DM Purger email login now verify HTTPS certificates.
