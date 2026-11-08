@@ -985,12 +985,15 @@ export function triggerEffectsUpdate() {
     scanAndApplyEffects();
 }
 
+const PROFILE_ROOTS = "[class*='userPopout'], [class*='user-profile-popout'], [class*='userProfile'], [class*='modalRoot'], [role='dialog'], [class*='layer_']";
+
+// Full scans are expensive, so wait for the page to settle (was 35ms, which ran constantly while chatting)
 function debouncedScan() {
     if (!active || (typeof document !== "undefined" && document.hidden)) return;
     if (scanTimer) clearTimeout(scanTimer);
     scanTimer = setTimeout(() => {
         scanAndApplyEffects();
-    }, 35);
+    }, 300);
 }
 
 function onConnectionOpen() {
@@ -1051,23 +1054,19 @@ export function startProfileEffects() {
 
     ensureProfileFontsLoaded();
 
+    // Light watcher: only a quick check on top-level added nodes (no deep searches on every change).
+    // Profile popouts/modals also trigger an instant scan through the Flux events below.
     observer = new MutationObserver(mutations => {
         let hasProfileMutation = false;
-        for (let i = 0; i < mutations.length; i++) {
-            const m = mutations[i];
-            for (let j = 0; j < m.addedNodes.length; j++) {
-                const node = m.addedNodes[j];
-                if (node instanceof HTMLElement) {
-                    if (
-                        node.matches?.("[class*='userProfile'], [class*='userPopout'], [class*='user-profile-popout'], [class*='themeContainer'], [class*='outer_'], [class*='profileContentInner'], [class*='modalRoot'], [role='dialog'], [class*='biteSize'], [class*='fullSize'], [class*='displayName']") ||
-                        node.querySelector?.("[class*='userProfile'], [class*='userPopout'], [class*='user-profile-popout'], [class*='themeContainer'], [class*='outer_'], [class*='profileContentInner'], [class*='biteSize'], [class*='fullSize'], [class*='displayName']")
-                    ) {
-                        hasProfileMutation = true;
-                        break;
-                    }
+        outer: for (let i = 0; i < mutations.length; i++) {
+            const added = mutations[i].addedNodes;
+            for (let j = 0; j < added.length; j++) {
+                const node = added[j];
+                if (node instanceof HTMLElement && node.matches?.(PROFILE_ROOTS)) {
+                    hasProfileMutation = true;
+                    break outer;
                 }
             }
-            if (hasProfileMutation) break;
         }
 
         if (hasProfileMutation) {

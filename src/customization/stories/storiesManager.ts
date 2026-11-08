@@ -94,7 +94,7 @@ function scanAvatars() {
             }
             await injectRingIntoAvatar(avatarEl, userId);
         }
-    }, 120);
+    }, 300);
 }
 
 export function startStories() {

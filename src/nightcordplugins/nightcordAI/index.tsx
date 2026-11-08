@@ -908,14 +908,16 @@ export default definePlugin({
             _shopObserver = null;
         }
 
-        let isThrottled = false;
+        // Reacts right away, then at most twice a second while the page is busy (e.g. chatting)
+        let lastRun = 0;
+        let pending: ReturnType<typeof setTimeout> | null = null;
         _shopObserver = new MutationObserver(() => {
-            if (isThrottled) return;
-            isThrottled = true;
-            requestAnimationFrame(() => {
-                isThrottled = false;
+            if (pending) return;
+            pending = setTimeout(() => {
+                pending = null;
+                lastRun = Date.now();
                 transformShop();
-            });
+            }, Math.max(0, 400 - (Date.now() - lastRun)));
         });
         _shopObserver.observe(document.body, { childList: true, subtree: true });
         transformShop();

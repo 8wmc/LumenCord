@@ -108,8 +108,15 @@ export function startDrawingInjector() {
 
     checkForProfileCustomizer();
 
+    // At most once per frame (it used to run on every single page change)
+    let queued = false;
     observer = new MutationObserver(() => {
-        checkForProfileCustomizer();
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(() => {
+            queued = false;
+            if (observer) checkForProfileCustomizer();
+        });
     });
 
     observer.observe(document.body, {

@@ -139,14 +139,16 @@ export default definePlugin({
     },
 
     start() {
-        let queued = false;
+        // Reacts right away, then at most twice a second while the page is busy (e.g. chatting)
+        let lastRun = 0;
+        let pending: ReturnType<typeof setTimeout> | null = null;
         observer = new MutationObserver(() => {
-            if (queued) return;
-            queued = true;
-            requestAnimationFrame(() => {
-                queued = false;
-                placeRow();
-            });
+            if (pending) return;
+            pending = setTimeout(() => {
+                pending = null;
+                lastRun = Date.now();
+                if (observer) placeRow();
+            }, Math.max(0, 400 - (Date.now() - lastRun)));
         });
         observer.observe(document.body, { childList: true, subtree: true });
         placeRow();

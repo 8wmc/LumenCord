@@ -72,7 +72,7 @@ app.on("ready", async () => {
     // Run update check in background asynchronously without blocking UI startup
     setTimeout(() => {
         if (!process.env.BD_SKIP_UPDATECHECK) {
-            import("./update_installer").then(m => m.default?.()).catch(() => {});
+            import("./update_installer").then(m => { if (m.default) m.default(); }).catch(() => {});
         }
     }, 2000);
 });

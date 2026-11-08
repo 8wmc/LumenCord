@@ -36,6 +36,10 @@ Look: deep purple / navy with violet accent. Logo: glowing "L" with a ring on a 
   batches of ~20). Games are plain DOM/canvas in `games/*.ts`, each a GameDef; add new ones to a list and they show
   up automatically. Best scores saved per device (DataStore). Styles only load while the window is open.
 - Badge glow: staff, Lemon and Donator badges pulse with a glow (glow.css), since badges are tiny in Discord.
+- Speed pass (v2): theme background moved onto its own GPU layer (#app-mount::before) instead of a "fixed"
+  background; no backdrop blur. 8 heavy plugins off by default (MessageLoggerEnhanced, VoiceDictation, EventLogs,
+  SoundCordPlayer, CustomProfile, QuickDM, CopyProfileId, ValidSearch); older installs get them switched off once
+  (lumenCordTheme, DataStore flag LumenCord_speedUp_v1). Profile customization scans slowed from 35ms to 300ms.
 - Built-in community theme (plugin `src/nightcordplugins/lumenCordTheme`, LumenCord.theme.css v2.4), on by default,
   switch at the top of Settings → Themes.
 - Installer pages: Welcome (logo) → Licence (keeps the Vencord/Equicord/Nightcord GPL credit) → Credits (owner card,

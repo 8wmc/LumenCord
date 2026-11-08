@@ -94,7 +94,7 @@
         try {
             require("electron").clipboard.writeText(text);
         } catch {
-            navigator.clipboard?.writeText(text);
+            if (navigator.clipboard) navigator.clipboard.writeText(text);
         }
         copied = true;
         setTimeout(() => copied = false, 1200);

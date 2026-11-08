@@ -286,7 +286,7 @@ function isMessageObject(m: unknown): m is LoggedMessageJSON {
 
 export default definePlugin({
     name: "MessageLoggerEnhanced",
-    enabledByDefault: true,
+    enabledByDefault: false,
     required: false,
     authors: [Devs.Aria, EquicordDevs.keircn],
     description: "Improves MessageLogger with edited message history, ghost ping detection and more",

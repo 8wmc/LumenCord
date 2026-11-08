@@ -1580,7 +1580,7 @@ function subscribeToEvents() {
 
 export default definePlugin({
     name: "EventLogs",
-    enabledByDefault: true,
+    enabledByDefault: false,
     description: "Logs deleted/edited messages, friends, pings, etc. Open via Discord Header Bar.",
     authors: [{ name: "Nightcord", id: 0n }],
     dependencies: ["HeaderBarAPI"],

@@ -265,7 +265,7 @@ export default definePlugin({
             id: 1539701501679894678n
         }
     ],
-    enabledByDefault: true,
+    enabledByDefault: false,
 
     start() {
         debouncedScanPopouts();

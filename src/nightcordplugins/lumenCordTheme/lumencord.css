@@ -172,7 +172,31 @@ body,
     --lc-bg-size: var(--lc-credit-size) auto, 230px 230px, cover, cover, cover, cover, cover;
 }
 
-#app-mount,
+/*
+ * Speed: the background lives on its own layer behind the app (#app-mount::before).
+ * The graphics card draws it once and keeps it, so chatting, hovering and scrolling never redraw it.
+ * (It used to be a "fixed" background, which made Chrome repaint every layer on every change.)
+ */
+#app-mount {
+    isolation: isolate;
+}
+
+#app-mount::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-color: var(--lc-base-0);
+    background-image: var(--lc-bg-layers);
+    background-repeat: no-repeat;
+    background-position: var(--lc-bg-position);
+    background-size: var(--lc-bg-size);
+    will-change: transform;
+    transform: translateZ(0);
+    contain: strict;
+}
+
 /* Settings get the same background, so they look clear instead of dark */
 [aria-label="USER_SETTINGS"],
 [class*="standardSidebarView_"] {
@@ -181,7 +205,7 @@ body,
     background-repeat: no-repeat !important;
     background-position: var(--lc-bg-position) !important;
     background-size: var(--lc-bg-size) !important;
-    background-attachment: fixed !important;
+    will-change: transform;
 }
 
 /* Settings: fully see-through, so the whole background shows behind the menu and the page */
@@ -334,7 +358,6 @@ button[class*="colorBrand_"]:hover {
 [class*="popout_"] {
     border: 1px solid rgb(170 179 204 / 0.10);
     box-shadow: 0 10px 30px rgb(0 0 0 / 0.45), 0 0 18px rgb(139 92 246 / 0.12) !important;
-    backdrop-filter: blur(10px);
 }
 
 /* Text selection */
