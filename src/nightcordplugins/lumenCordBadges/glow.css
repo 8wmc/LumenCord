@@ -1,0 +1,37 @@
+/* LumenCord badge glows. Badges are tiny in Discord, so the "wow" comes from a halo around them. */
+@keyframes lc-glow-owner {
+    0%, 100% { filter: drop-shadow(0 0 1.5px #fde68a) drop-shadow(0 0 3px rgb(251 191 36 / 75%)); }
+    50% { filter: drop-shadow(0 0 2px #fff7d6) drop-shadow(0 0 5px rgb(251 191 36 / 100%)) drop-shadow(0 0 9px rgb(192 38 211 / 80%)); }
+}
+
+@keyframes lc-glow-admin {
+    0%, 100% { filter: drop-shadow(0 0 1.5px rgb(253 164 175 / 80%)) drop-shadow(0 0 3px rgb(225 29 72 / 60%)); }
+    50% { filter: drop-shadow(0 0 2px #ffe4e6) drop-shadow(0 0 6px rgb(225 29 72 / 95%)); }
+}
+
+@keyframes lc-glow-helper {
+    0%, 100% { filter: drop-shadow(0 0 1.5px rgb(153 246 228 / 80%)) drop-shadow(0 0 3px rgb(20 184 166 / 60%)); }
+    50% { filter: drop-shadow(0 0 2px #ccfbf1) drop-shadow(0 0 6px rgb(45 212 191 / 95%)); }
+}
+
+@keyframes lc-glow-lemon {
+    0%, 100% { filter: drop-shadow(0 0 1.5px #fef08a) drop-shadow(0 0 3px rgb(234 179 8 / 70%)); }
+    50% { filter: drop-shadow(0 0 2px #fefce8) drop-shadow(0 0 6px rgb(250 204 21 / 100%)) drop-shadow(0 0 9px rgb(163 230 53 / 70%)); }
+}
+
+@keyframes lc-glow-cool {
+    0%, 100% { filter: drop-shadow(0 0 1.5px rgb(103 232 249 / 70%)); }
+    50% { filter: drop-shadow(0 0 4px rgb(103 232 249 / 95%)); }
+}
+
+[style*="lc-glow"] {
+    transition: transform 150ms ease;
+}
+
+[style*="lc-glow"]:hover {
+    transform: scale(1.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [style*="lc-glow"] { animation: none !important; }
+}

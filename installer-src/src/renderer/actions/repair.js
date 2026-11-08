@@ -1,44 +1,14 @@
-import {progress} from "../stores/installation";
-import {promises as fs} from "fs";
-import path from "path";
-import {killDiscord, startDiscord} from "./utils/kill";
 import {log, lognewline} from "./utils/log";
+import install from "./install";
 
-const RESTART_DISCORD_PROGRESS = 100;
-
-async function repairShims(paths) {
-    process.noAsar = true;
-    const progressPerLoop = (RESTART_DISCORD_PROGRESS - progress.value) / paths.length;
-    for (const resPath of paths) {
-        log(`Repairing LumenCord in: ${resPath}`);
-        try {
-            log("Closing Discord...");
-            killDiscord(resPath, log);
-
-            // Just start it to verify
-            log("Restarting Discord...");
-            startDiscord(resPath);
-            progress.set(progress.value + progressPerLoop);
-        } catch (err) {
-            log(`❌ Could not repair LumenCord in ${resPath}`);
-            log(`❌ ${err.message}`);
-            return err;
-        }
-    }
-}
-
+/**
+ * Repair = put a fresh copy of LumenCord back in place.
+ * Re-downloads the latest package and re-patches Discord (your settings and plugins are kept).
+ */
 export default async function(paths) {
-    try {
-        log("Starting Repair...");
-        const err = await repairShims(Object.values(paths));
-        if (err) return false;
-
-        progress.set(RESTART_DISCORD_PROGRESS);
-        lognewline("Repair complete!");
-        return true;
-    } catch (err) {
-        lognewline("❌ Repair failed");
-        log(`❌ ${err.message}`);
-        return false;
-    }
+    log("Starting Repair...");
+    log("Repair downloads a fresh copy of LumenCord and patches Discord again. Your settings are kept.");
+    const ok = await install(paths);
+    lognewline(ok ? "Repair complete!" : "❌ Repair failed");
+    return ok;
 }

@@ -8,6 +8,16 @@
     import {remote} from "electron";
     import getStatic from "../getstatic";
 
+    // First visit: tick every Discord that was found on this computer
+    if (!Object.values($platforms).some(r => r)) {
+        platforms.update(s => {
+            for (const channel of Object.keys(s)) {
+                if ($paths[channel]) s[channel] = true;
+            }
+            return s;
+        });
+    }
+
     if (Object.values($platforms).some(r => r)) canGoForward.set(true);
     else canGoForward.set(false);
     canGoBack.set(true);

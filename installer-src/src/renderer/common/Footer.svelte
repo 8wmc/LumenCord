@@ -29,8 +29,13 @@
         nextButtonContent = "Next";
     }
     
-    function navigatePage() {
-        if ((event.key === "ArrowRight" && event.ctrlKey) && $canGoForward) {
+    function navigatePage(event) {
+        const tag = (event.target && event.target.tagName) || "";
+        const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "BUTTON" || tag === "A";
+        if (event.key === "Enter" && !typing && $canGoForward && $nextPage) {
+            goToNext();
+        }
+        else if ((event.key === "ArrowRight" && event.ctrlKey) && $canGoForward) {
             goToNext();
         }
         else if ((event.key === "ArrowLeft" && event.ctrlKey) && $canGoBack) {

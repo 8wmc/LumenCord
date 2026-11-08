@@ -6,19 +6,36 @@
 
 import { BadgePosition, BadgeUserArgs, ProfileBadge } from "@api/Badges";
 import * as DataStore from "@api/DataStore";
+import { disableStyle, enableStyle } from "@api/Styles";
 import definePlugin from "@utils/types";
-import { PresenceStore, UserStore } from "@webpack/common";
+import { PresenceStore, React, UserStore } from "@webpack/common";
 
 import { getAuth, getEntry, getManualBadges, isAuthFor, loadAuth, loadManualBadges, ping, prefetch, reportGame } from "./api";
-import { openFirstLaunchPopup } from "./FirstLaunch";
-import { isSharing, settings } from "./settings";
 import { formatAge, formatDuration, GAME_STAGES, iconFor, MANUAL_BADGES, MEMBER_STAGES, MINUTE, stageFor } from "./defs";
+import { openFirstLaunchPopup } from "./FirstLaunch";
+import glowStyle from "./glow.css?managed";
+import { isSharing, settings } from "./settings";
 
 export const BADGES_SETTINGS_KEY = "lumencord_badges";
 // v2: everyone who isn't verified sees the new first-launch popup once
 const PROMPTED_KEY = "LumenCordBadges_prompted_v2";
 
-const BADGE_STYLE = { borderRadius: "50%" };
+const BADGE_STYLE = { borderRadius: "50%", filter: "drop-shadow(0 0 1.5px rgb(192 132 252 / 70%))" };
+
+// Staff and special badges glow and pulse (keyframes live in glow.css)
+const GLOWS: Record<string, string> = {
+    owner: "lc-glow-owner 2.4s ease-in-out infinite",
+    admin: "lc-glow-admin 2.6s ease-in-out infinite",
+    helper: "lc-glow-helper 2.8s ease-in-out infinite",
+    lemon: "lc-glow-lemon 2.2s ease-in-out infinite",
+    developer: "lc-glow-cool 3s ease-in-out infinite",
+    donator: "lc-glow-cool 2.6s ease-in-out infinite",
+};
+
+function manualStyle(id: string): React.CSSProperties {
+    const animation = GLOWS[id];
+    return animation ? { borderRadius: id === "admin" ? 0 : "50%", animation } : BADGE_STYLE;
+}
 const LAST_SESSION_STYLE = { borderRadius: "50%", opacity: 0.75, filter: "saturate(0.55)" };
 
 function badgesFor({ userId }: BadgeUserArgs): ProfileBadge[] {
@@ -34,7 +51,7 @@ function badgesFor({ userId }: BadgeUserArgs): ProfileBadge[] {
             description: def.description,
             iconSrc: iconFor(def.id),
             position: BadgePosition.START,
-            props: { style: BADGE_STYLE },
+            props: { style: manualStyle(def.id) },
         });
     }
 
@@ -187,6 +204,7 @@ export default definePlugin({
     },
 
     async start() {
+        enableStyle(glowStyle);
         await loadAuth();
         void loadManualBadges();
         manualTimer = setInterval(() => void loadManualBadges(), 30 * MINUTE);
@@ -195,6 +213,7 @@ export default definePlugin({
     },
 
     stop() {
+        disableStyle(glowStyle);
         if (gameTimer) clearInterval(gameTimer);
         if (manualTimer) clearInterval(manualTimer);
         gameTimer = manualTimer = null;

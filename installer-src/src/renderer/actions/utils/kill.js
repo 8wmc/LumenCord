@@ -33,7 +33,7 @@ export async function killDiscord(resPath, log) {
     const procName = getProcName(resPath);
     const exeName  = procName + ".exe";
 
-    if (log) log(`Fermeture de ${procName}...`);
+    if (log) log(`Closing ${procName}...`);
 
     // ── Étape 1 : Fermeture gracieuse via Squirrel (Update.exe --processStop) ─────
     // Donne à Discord le temps de flusher ses données de session (localStorage,
@@ -44,7 +44,7 @@ export async function killDiscord(resPath, log) {
         const channelDir    = path.join(appVersionDir, "..");
         const updateExe     = path.join(channelDir, "Update.exe");
         if (fs.existsSync(updateExe)) {
-            if (log) log(`Arrêt gracieux via Update.exe --processStop ${exeName}...`);
+            if (log) log(`Asking ${exeName} to close...`);
             exec(`"${updateExe}" --processStop ${exeName}`);
             // Attendre jusqu'à 4s que Discord se ferme proprement
             const exitedGracefully = await waitForExit(exeName, 4000);
@@ -52,10 +52,10 @@ export async function killDiscord(resPath, log) {
                 // Attendre 600ms supplémentaires pour s'assurer que le flush
                 // de la session Electron (LevelDB / Preferences) est terminé
                 await new Promise(r => setTimeout(r, 600));
-                if (log) log(`${procName} fermé proprement.`);
+                if (log) log(`${procName} closed.`);
                 return;
             }
-            if (log) log(`Fermeture gracieuse expirée, passage en force kill...`);
+            if (log) log(`Discord didn't close on its own, forcing it closed...`);
         }
     } catch (_) {}
 
@@ -83,7 +83,7 @@ export async function killDiscord(resPath, log) {
     await waitForExit(exeName, 4000);
     await new Promise(r => setTimeout(r, 800));
 
-    if (log) log(`${procName} fermé.`);
+    if (log) log(`${procName} closed.`);
 }
 
 export function startDiscord(resPath) {

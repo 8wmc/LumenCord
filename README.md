@@ -37,6 +37,11 @@ The installer is Windows-only for now. Updates inside the app come only from thi
 Every upload to GitHub gets a new version number automatically (2.0.<build number>), so installed copies
 notice the update on their own.
 
+## LumenCord Games
+
+Click **LumenCord Games** in your DM list (under LumenCord AI) to play 20 free games inside Discord: arcade, cards,
+puzzles, board games and word games. Your best scores are saved on your device. More games are coming in batches.
+
 ## LumenCord badges
 
 Badges only LumenCord users can see. Everything about them is on **Settings → LumenCord Badges**.
