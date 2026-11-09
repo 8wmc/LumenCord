@@ -4,90 +4,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { crazyEights } from "./cards2";
 import { Card, cardEl, GameDef, isRed, newDeck, pick, RANKS, shuffle } from "./core";
 
 // ───────────────────────── Blackjack ─────────────────────────
-const blackjack: GameDef = {
-    id: "blackjack", name: "Blackjack", icon: "🃏", color: "#22c55e", category: "Cards",
-    description: "Beat the dealer to 21 without going bust. Start with 100 chips; cash out when you're ahead.",
-    controls: "Pick a bet, then Hit, Stand or Double",
-    start(api) {
-        let chips = 100, bet = 10, deck: Card[] = [], you: Card[] = [], dealer: Card[] = [], phase: "bet" | "play" | "done" = "bet", msg = "Place your bet";
-        const wrap = api.el("div", "lcg-table");
-        const dealerRow = api.el("div", "lcg-hand", undefined, wrap);
-        const dealerLbl = api.el("div", "lcg-hand-label", "", wrap);
-        const msgEl = api.el("div", "lcg-msg", "", wrap);
-        const youRow = api.el("div", "lcg-hand", undefined, wrap);
-        const youLbl = api.el("div", "lcg-hand-label", "", wrap);
-        const controls = api.el("div", "lcg-controls", undefined, wrap);
-
-        const value = (h: Card[]) => {
-            let v = 0, aces = 0;
-            for (const c of h) { if (!c.up) continue; v += c.rank === 1 ? 11 : Math.min(c.rank, 10); if (c.rank === 1) aces++; }
-            while (v > 21 && aces--) v -= 10;
-            return v;
-        };
-        const draw = (up = true) => {
-            if (deck.length < 15) deck = [...newDeck(), ...newDeck()];
-            const c = deck.pop()!; c.up = up; return c;
-        };
-        const btn = (text: string, fn: () => void, kind = "", disabled = false) => {
-            const b = api.el("button", `lcg-btn ${kind}`, text, controls);
-            b.disabled = disabled;
-            b.onclick = fn;
-        };
-        function render() {
-            dealerRow.innerHTML = ""; youRow.innerHTML = "";
-            dealer.forEach(c => dealerRow.appendChild(cardEl(c)));
-            you.forEach(c => youRow.appendChild(cardEl(c)));
-            dealerLbl.textContent = dealer.length ? `Dealer: ${value(dealer)}${dealer.some(c => !c.up) ? " + ?" : ""}` : "Dealer";
-            youLbl.textContent = you.length ? `You: ${value(you)}  ·  Bet ${bet}` : `Chips: ${chips}`;
-            msgEl.textContent = msg;
-            api.setScore(chips);
-            api.setStatus(`Chips ${chips}`);
-            controls.innerHTML = "";
-            if (phase === "bet" || phase === "done") {
-                for (const b of [10, 25, 50, 100]) btn(`Bet ${b}`, () => deal(b), b === bet ? "primary" : "", b > chips);
-                btn("Cash out", () => api.end(chips, chips >= 100 ? "Cashed out 💰" : "Cashed out", `You walked away with ${chips} chips.`), "ghost");
-            } else {
-                btn("Hit", hit, "primary");
-                btn("Stand", stand);
-                btn("Double", double, "", you.length !== 2 || chips < bet);
-            }
-        }
-        function deal(b: number) {
-            if (b > chips) return;
-            bet = b; chips -= b;
-            you = [draw(), draw()];
-            dealer = [draw(), draw(false)];
-            phase = "play"; msg = "Hit or stand?";
-            if (value(you) === 21) return finish();
-            render();
-        }
-        function hit() { you.push(draw()); if (value(you) > 21) return finish(); if (value(you) === 21) return stand(); render(); }
-        function double() { chips -= bet; bet *= 2; you.push(draw()); if (value(you) > 21) return finish(); stand(); }
-        function stand() {
-            dealer[1].up = true;
-            while (value(dealer) < 17) dealer.push(draw());
-            finish();
-        }
-        function finish() {
-            dealer.forEach(c => c.up = true);
-            const y = value(you), d = value(dealer), bj = y === 21 && you.length === 2;
-            if (y > 21) msg = "Bust! You lose.";
-            else if (bj && !(d === 21 && dealer.length === 2)) { chips += Math.floor(bet * 2.5); msg = "Blackjack! 🎉 Pays 3 to 2."; }
-            else if (d > 21 || y > d) { chips += bet * 2; msg = d > 21 ? "Dealer busts, you win!" : "You win!"; }
-            else if (y === d) { chips += bet; msg = "Push, bet returned."; }
-            else msg = "Dealer wins.";
-            phase = "done";
-            render();
-            if (chips <= 0) api.later(() => api.end(0, "Out of chips", "The house wins this time."), 900);
-        }
-        render();
-    }
-};
-
-// ───────────────────────── Go Fish ─────────────────────────
 const goFish: GameDef = {
     id: "gofish", name: "Go Fish", icon: "🐟", color: "#38bdf8", category: "Cards",
     description: "Collect sets of four. Ask the computer for a rank you hold. If they don't have it, go fish!",
@@ -358,4 +278,4 @@ const memory: GameDef = {
     }
 };
 
-export const CARDS: GameDef[] = [blackjack, goFish, solitaire, memory];
+export const CARDS: GameDef[] = [solitaire, crazyEights, goFish, memory];

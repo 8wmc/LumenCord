@@ -39,7 +39,7 @@ notice the update on their own.
 
 ## LumenCord Games
 
-Click **LumenCord Games** in your DM list (under LumenCord AI) to play 20 free games inside Discord: arcade, cards,
+Click **LumenCord Games** in your DM list (under LumenCord AI) to play 39 free games inside Discord: arcade, cards,
 puzzles, board games and word games. Your best scores are saved on your device. More games are coming in batches.
 
 ## LumenCord badges

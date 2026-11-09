@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { battleship, dotsBoxes, reversi } from "./board2";
 import { GameDef, pick } from "./core";
 
 // ───────────────────────── Tic-Tac-Toe ─────────────────────────
@@ -270,4 +271,4 @@ const checkers: GameDef = {
     }
 };
 
-export const BOARD: GameDef[] = [ttt, connect4, checkers];
+export const BOARD: GameDef[] = [reversi, checkers, connect4, battleship, dotsBoxes, ttt];

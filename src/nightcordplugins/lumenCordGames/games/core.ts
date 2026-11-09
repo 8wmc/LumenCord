@@ -6,6 +6,8 @@
 
 /* LumenCord Games engine. Plain DOM + canvas, no React, so every game is small and fully stops when closed. */
 
+import { quality, sfx } from "./fx";
+
 export type Category = "Arcade" | "Cards" | "Puzzle" | "Board" | "Word";
 
 export interface GameDef {
@@ -18,6 +20,8 @@ export interface GameDef {
     controls: string;
     /** "time" scores are seconds and lower is better */
     scoreKind?: "points" | "time";
+    /** canvas games play their own sounds; DOM games get automatic click / win / lose sounds */
+    selfSound?: boolean;
     start(api: GameApi): void;
 }
 
@@ -134,6 +138,20 @@ export function newDeck(): Card[] {
     return shuffle(d);
 }
 
+// pip positions (x, y as fractions of the card's centre area) for 2-10
+const PIPS: Record<number, [number, number][]> = {
+    2: [[.5, .12], [.5, .88]],
+    3: [[.5, .12], [.5, .5], [.5, .88]],
+    4: [[.25, .12], [.75, .12], [.25, .88], [.75, .88]],
+    5: [[.25, .12], [.75, .12], [.5, .5], [.25, .88], [.75, .88]],
+    6: [[.25, .12], [.75, .12], [.25, .5], [.75, .5], [.25, .88], [.75, .88]],
+    7: [[.25, .12], [.75, .12], [.5, .31], [.25, .5], [.75, .5], [.25, .88], [.75, .88]],
+    8: [[.25, .12], [.75, .12], [.5, .31], [.25, .5], [.75, .5], [.5, .69], [.25, .88], [.75, .88]],
+    9: [[.25, .1], [.75, .1], [.25, .37], [.75, .37], [.5, .5], [.25, .63], [.75, .63], [.25, .9], [.75, .9]],
+    10: [[.25, .1], [.75, .1], [.5, .24], [.25, .37], [.75, .37], [.25, .63], [.75, .63], [.5, .76], [.25, .9], [.75, .9]],
+};
+const FACE_MARK: Record<number, string> = { 11: "⚔", 12: "♛", 13: "♚" };
+
 export function cardEl(card: Card | null, small = false): HTMLDivElement {
     const d = document.createElement("div");
     d.className = "lcg-card" + (small ? " small" : "");
@@ -143,10 +161,18 @@ export function cardEl(card: Card | null, small = false): HTMLDivElement {
     }
     if (!card.up) {
         d.classList.add("back");
+        d.innerHTML = '<span class="logo">L</span>';
         return d;
     }
     if (isRed(card.suit)) d.classList.add("red");
-    d.innerHTML = `<span class="tl">${RANKS[card.rank]}<br>${card.suit}</span><span class="mid">${card.suit}</span><span class="br">${RANKS[card.rank]}<br>${card.suit}</span>`;
+    const r = RANKS[card.rank];
+    let mid: string;
+    if (card.rank === 1) mid = `<span class="ace">${card.suit}</span>`;
+    else if (card.rank >= 11) {
+        d.classList.add("face");
+        mid = `<span class="face-panel"><span class="face-mark">${FACE_MARK[card.rank]}</span><span class="face-rank">${r}</span><span class="face-suit">${card.suit}</span></span>`;
+    } else mid = PIPS[card.rank].map(([x, y]) => `<i style="left:${x * 100}%;top:${y * 100}%"${y > .55 ? ' class="flip"' : ""}>${card.suit}</i>`).join("");
+    d.innerHTML = `<span class="tl">${r}<br>${card.suit}</span><span class="mid">${mid}</span><span class="br">${r}<br>${card.suit}</span>`;
     return d;
 }
 
@@ -210,7 +236,7 @@ export function mountGame(def: GameDef, host: HTMLElement, scores: ScoreStore): 
         let ended = false;
 
         const root = document.createElement("div");
-        root.className = "lcg-root";
+        root.className = `lcg-root cat-${def.category.toLowerCase()}`;
         area.appendChild(root);
 
         const onKeyDown = (e: KeyboardEvent) => handleKey(e, true);
@@ -245,6 +271,7 @@ export function mountGame(def: GameDef, host: HTMLElement, scores: ScoreStore): 
                 ended = true;
                 const prev = scores.get(def.id);
                 const record = isBetter(def, score, prev);
+                if (!def.selfSound) (/win|got it|solved|cleared|found|🎉|🏆|wpm/i.test(`${title} ${text}`) ? sfx.win : sfx.lose)();
                 if (record) scores.set(def.id, score);
                 showBest();
                 const ov = document.createElement("div");
@@ -260,11 +287,22 @@ export function mountGame(def: GameDef, host: HTMLElement, scores: ScoreStore): 
             },
             onKey(fn) { keyFns.push(fn); },
             loop(fn) {
-                let raf = 0, last = 0, running = false;
+                // Speed: the loop stops completely while Discord is hidden or another window has focus,
+                // and switches to low graphics if frames get slow on this PC.
+                let raf = 0, last = 0, running = false, slowFor = 0, ema = 1 / 60;
+                const away = () => document.hidden || !document.hasFocus();
                 const tick = (t: number) => {
+                    raf = 0;
                     if (!running || closed) return;
-                    const dt = last ? Math.min((t - last) / 1000, 1 / 20) : 1 / 60;
+                    if (away()) { last = 0; return; } // resumes on focus / visibility
+                    const raw = last ? (t - last) / 1000 : 1 / 60;
+                    const dt = Math.min(raw, 1 / 20);
                     last = t;
+                    ema += (raw - ema) * .05;
+                    if (!quality.low) {
+                        slowFor = ema > 1 / 42 ? slowFor + raw : 0;
+                        if (slowFor > 1.5) quality.low = true;
+                    }
                     try {
                         fn(dt);
                     } catch (err) {
@@ -274,11 +312,18 @@ export function mountGame(def: GameDef, host: HTMLElement, scores: ScoreStore): 
                     }
                     raf = requestAnimationFrame(tick);
                 };
+                const wake = () => { if (running && !closed && !raf && !away()) { last = 0; raf = requestAnimationFrame(tick); } };
+                document.addEventListener("visibilitychange", wake);
+                window.addEventListener("focus", wake);
                 const l: Loop = {
                     start() { if (running || closed) return; running = true; last = 0; raf = requestAnimationFrame(tick); },
-                    stop() { running = false; cancelAnimationFrame(raf); },
+                    stop() { running = false; cancelAnimationFrame(raf); raf = 0; },
                 };
-                cleanups.push(() => l.stop());
+                cleanups.push(() => {
+                    l.stop();
+                    document.removeEventListener("visibilitychange", wake);
+                    window.removeEventListener("focus", wake);
+                });
                 l.start();
                 return l;
             },
@@ -289,13 +334,20 @@ export function mountGame(def: GameDef, host: HTMLElement, scores: ScoreStore): 
             },
             canvas(w, h) {
                 const cv = document.createElement("canvas");
-                const dpr = Math.min(window.devicePixelRatio || 1, 2);
-                cv.width = w * dpr;
-                cv.height = h * dpr;
+                // Speed: never draw more than 1.5x pixels on high-res screens
+                const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+                cv.width = Math.round(w * dpr);
+                cv.height = Math.round(h * dpr);
                 cv.className = "lcg-canvas";
                 cv.style.aspectRatio = `${w} / ${h}`;
-                const g = cv.getContext("2d")!;
+                const g = cv.getContext("2d", { alpha: false })!;
                 g.scale(dpr, dpr);
+                // Speed: canvas glow (shadowBlur) is the most expensive effect, so cap it and turn it off in low graphics
+                const sb = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, "shadowBlur")!;
+                Object.defineProperty(g, "shadowBlur", {
+                    get() { return sb.get!.call(this); },
+                    set(v: number) { sb.set!.call(this, quality.low ? 0 : Math.min(v, 16)); },
+                });
                 root.appendChild(cv);
                 return {
                     cv, g,
@@ -336,6 +388,15 @@ export function mountGame(def: GameDef, host: HTMLElement, scores: ScoreStore): 
             root.innerHTML = '<div class="lcg-error">This game hit an error. Press Restart to try again.</div>';
         }
         area.focus({ preventScroll: true });
+    }
+
+    // click sounds for DOM games (canvas games make their own)
+    if (!def.selfSound) {
+        area.addEventListener("pointerdown", e => {
+            const t = e.target as HTMLElement;
+            if (t.closest(".lcg-card, .lcg-mem")) sfx.card();
+            else if (t.closest("button, .lcg-sq, .lcg-c4-hole, .lcg-ttt-cell")) sfx.select();
+        });
     }
 
     bar.querySelector(".lcg-restart")!.addEventListener("click", () => {

@@ -4,7 +4,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { blocks } from "./blocks";
 import { GameDef, pick, shuffle } from "./core";
+import { blockBlast, bubblePop, gemSwap } from "./puzzle2";
+import { hangman, lightsOut, slidePuzzle, wordSearch } from "./puzzle3";
 
 const arrowDir = (e: KeyboardEvent): [number, number] | null => {
     switch (e.key) {
@@ -457,4 +460,4 @@ const typeRush: GameDef = {
     }
 };
 
-export const PUZZLE: GameDef[] = [twenty48, sweeper, wordGame, sudoku, typeRush];
+export const PUZZLE: GameDef[] = [blocks, gemSwap, blockBlast, bubblePop, twenty48, sweeper, sudoku, slidePuzzle, lightsOut, wordGame, hangman, wordSearch, typeRush];
